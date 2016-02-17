@@ -3,13 +3,15 @@
 
 import cheerio from 'cheerio';
 import iconv from 'iconv-lite';
-import { promisifiedFs } from 'file-reader';
-import { trimString } from './utils';
+import { trimString, promisifiedFs, rtfToHtml } from './utils';
 
 const baseDir = '/Data/devel/projects/tedic/src/PaScrapper/resources/';
-const filePath = baseDir + '03p01apr.rtf';
 
-promisifiedFs(filePath).then((data) => {
+//first transform from rtf to html
+//then parse thehtml buffer
+
+let votingHTMLParser = (data) => {
+    /* parses the html result of the conversion rtf -> html */
     data = iconv.decode(data, 'utf8');
     let $ = cheerio.load(data);
     let trList = $('table tr');
@@ -74,7 +76,20 @@ promisifiedFs(filePath).then((data) => {
 	}
     }
     console.log(voting);
-}).catch( (error) => {
-    console.trace(error);
-});
+    return voting;
+};
 
+let votingParser = () => {
+    let promises = rtfToHtml(baseDir + 'rtf/');
+    
+    Promise.all(promises).then( (values) => {
+	for(let data of values){
+	    votingHTMLParser(data);
+	}
+    }).catch( (error) => {
+	console.trace(error);
+    });
+};
+
+
+votingParser();
