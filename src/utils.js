@@ -9,7 +9,7 @@ export let trimString = (string) => {
 };
 
 //promisified fs readfile as it is an async function
-export let promisifiedFs = (uri, encoding) => {
+export let promisifiedReadFs = (uri, encoding) => {
     return new Promise((resolve, reject) => {
 	fs.readFile(uri, encoding, (err, data) => {
 	    if(err){
@@ -21,26 +21,34 @@ export let promisifiedFs = (uri, encoding) => {
     });
 };
 
-let promisifiedExec = (command) => {
+export let promisifiedWriteFs = (uri, content) => {
+    return new Promise((resolve, reject) => {
+	fs.writeFile(uri, content, (err, data) => {
+	    if(err){
+		reject(err);
+	    }else{
+		console.log('writen file');
+		resolve(data);
+	    }
+	});
+    });
+};
+
+export let promisifiedExec = (command) => {
      return new Promise((resolve, reject) => {
     	 exec.exec(command, (error, stdout, stderr) => {
 	     if(error) reject(error);
     	     resolve(stdout);
-    	    });
+    	 });
     });   
 };
 
 export let rtfToHtml = (baseDir) => {
-    /* returns a list of promises
-     that will perform the transformation
-     from rtf to html using unrttf
-     */
     let files = fs.readdirSync(baseDir);
-    let promises = [];
+    let commands = [];
     for (let file of files){
-	let command = util.format('unrtf --html %s', baseDir + file);
-	promises.push(promisifiedExec(command));
+	commands.push(util.format('unrtf --html %s', baseDir + file));
     }
-  return promises;
+  return commands;
 };
 

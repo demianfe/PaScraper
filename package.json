@@ -11,7 +11,8 @@
     "cheerio": "^0.20.0",
     "iconv-lite": "^0.4.13",
     "mongodb": "^2.1.6",
-    "request-promise": "^2.0.0"
+    "request-promise": "^2.0.0",
+    "sleep": "^3.0.1"
   },
   "devDependencies": {},
   "scripts": {

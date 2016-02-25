@@ -4,6 +4,8 @@ import cheerio from 'cheerio';
 import { trimString } from './utils';
 
 export let parseSession = (data) => {
+    //TODO: add the session link
+    // use this link to complete the relative link of the RTF
     let $ = cheerio.load(data);
     let sessionData = {};
     sessionData.details = [];
@@ -42,6 +44,7 @@ export let parseSession = (data) => {
 	    let k  = trimString($(spanList[0]).text());
 	    let v = trimString($(spanList[2]).text());
 	    if (k !== '' && v !== ''){
+		k = k.split('.').join('_');
 		sessionData[k] = v;
 	    }
 	}else if(firstDivision && !seccondDivision){
@@ -70,12 +73,15 @@ export let parseSession = (data) => {
 		sessionDetail.subject = {title: trimString($(tdList[2]).text()),
 					link: $('a', tdList[2]).attr('href')};
 		sessionDetail.audio = $('a', tdList[3]).attr('href');
+		sessionDetail.result = trimString($(tdList[5]).text());
 		//voting
 		let voting = {};
-		let votingTilte = '';
-		votingTilte = trimString($(tdList[4]).text());
-		voting[votingTilte] = $('a', tdList[4]).attr('href');
-		sessionDetail.votings.push(voting);
+		let title = trimString($(tdList[4]).text());;
+		if (title !== '' && title !== '-' && title !== '_'){
+		    voting.title = title;
+		    voting.link = $('a', tdList[4]).attr('href');
+		    sessionDetail.votings.push(voting);
+		}		
 		let rowspan = $(tdList[0]).attr('rowspan');
 		if (rowspan !== undefined ){
 		    // if 'rowspan' attribute found, next row also contains
@@ -85,11 +91,14 @@ export let parseSession = (data) => {
 		    //siblings() returns a list of elements without the one that is calls the function
 		    let lastRow = parseInt(key) + parseInt(rowspan) - 1;
 		    let currentRow = key;
+
 		    while (currentRow < lastRow){
 			let nextRow = $(element).siblings()[currentRow];
-			votingTilte = trimString($(nextRow).text());
-			voting[votingTilte] = $('a', nextRow).attr('href');
-			sessionDetail.votings.push(voting);
+			title = trimString($(nextRow).text());
+			if (title !== '' && title !== '-' && title !== '_'){
+			    voting.link = $('a', nextRow).attr('href');
+			    sessionDetail.votings.push(voting);
+			}
 			currentRow++;
 		    }
 		}

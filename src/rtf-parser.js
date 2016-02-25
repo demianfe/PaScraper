@@ -10,7 +10,7 @@ const baseDir = '/Data/devel/projects/tedic/src/PaScrapper/resources/';
 //first transform from rtf to html
 //then parse thehtml buffer
 
-let votingHTMLParser = (data) => {
+export let votingHTMLParser = (data) => {
     /* parses the html result of the conversion rtf -> html */
     data = iconv.decode(data, 'utf8');
     let $ = cheerio.load(data);
@@ -78,18 +78,3 @@ let votingHTMLParser = (data) => {
     console.log(voting);
     return voting;
 };
-
-let votingParser = () => {
-    let promises = rtfToHtml(baseDir + 'rtf/');
-    
-    Promise.all(promises).then( (values) => {
-	for(let data of values){
-	    votingHTMLParser(data);
-	}
-    }).catch( (error) => {
-	console.trace(error);
-    });
-};
-
-
-votingParser();

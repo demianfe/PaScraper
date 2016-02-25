@@ -76,11 +76,9 @@ getCongressmenByPeriod('2013-2018').then( (congressmen) => {
 				 value: c.emailParlamentario},
 				{type: 'phone',
 				 label: 'Telefono',
-				 value: c.telefonoParlamentario}];
-	
+				 value: c.telefonoParlamentario}];	
 	//obtener sus organizaciones(partido, camara) desde la base de datos
 	//crear organizaciones y membresias
-	//
 	//TODO: add createObject call
     }
 });
