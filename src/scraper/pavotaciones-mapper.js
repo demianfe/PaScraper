@@ -1,6 +1,6 @@
 import Sequelize from 'sequelize';
 import request from 'request-promise';
-import getDiputados from 'db-client';
+import getDiputados from 'mongo-client';
 
 var sequelize = new Sequelize('votacionespa', 'carga', '123456', {
     host: 'localhost',

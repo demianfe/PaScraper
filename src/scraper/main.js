@@ -7,7 +7,7 @@ import iconv from 'iconv-lite';
 import fs from 'fs';
 
 import { parseSession } from './session-parser';
-import { saveObjects, saveSession, getRTFLinks } from './db-client';
+import { saveObjects, saveSession, getRTFLinks } from './mongo-client';
 
 const host = 'http://www.diputados.gov.py';
 const baseUrl = host + '/ww1/?pagina=sesiondigital';

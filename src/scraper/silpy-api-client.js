@@ -1,6 +1,6 @@
 import request from 'request-promise';
 import { saveObjects, removeCollection, saveCongressmen } from './db-client';
-import { getCongressmanById, getCongressmenByPeriod, getUniqueBills } from './db-client';
+import { getCongressmanById, getCongressmenByPeriod, getUniqueBills } from './mongo-client';
 import sleep from 'sleep';
 
 const baseUri = 'http://datos.congreso.gov.py/opendata/api/data/';

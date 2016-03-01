@@ -1,6 +1,6 @@
 import request from 'request-promise';
 import crypto from 'crypto';
-import { getCongressmenByPeriod } from './db-client';
+import { getCongressmenByPeriod } from './mongo-client';
 
 let baseUrl = 'http://parlamento.popit.parlamentoabierto.org.py:8000/api/v0.1';
 

@@ -7,7 +7,7 @@ import {rtfToHtml, promisifiedExec} from './utils';
 import { trimString, promisifiedReadFs } from './utils';
 import { parseSession } from './session-parser';
 import { votingHTMLParser } from './rtf-parser';
-import { getDownloadedRTF, saveObjects } from './db-client';
+import { getDownloadedRTF, saveObjects } from './mongo-client';
 
 const baseUrl = 'http://www.diputados.gov.py/plenaria/';
 const sessionListURI = baseDir + 'sesiones2015.html';
