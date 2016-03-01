@@ -7,7 +7,7 @@ import iconv from 'iconv-lite';
 import fs from 'fs';
 
 import { parseSession } from './session-parser';
-import { saveSession, getRTFLinks } from './db-client';
+import { saveObjects, saveSession, getRTFLinks } from './db-client';
 
 const host = 'http://www.diputados.gov.py';
 const baseUrl = host + '/ww1/?pagina=sesiondigital';
@@ -58,38 +58,46 @@ let crawlSessions = () => request(options).then( (htmlString) => {
 	console.trace(err);
     });
 
-
-let downloadRTF = (link, fileName) => {
+let downloadRTF = (link) => {
     return new Promise( (resolve, reject) => {
 	//request(link).pipe(fs.createWriteStream(fileName));
-	let file = fs.createWriteStream(fileName);
-	http.get(link, (res) => {
+	let file = fs.createWriteStream(link.fileName);
+	http.get(link.url, (res) => {
 	    res.on('data', (data) => {
 		file.write(data);
 	    }).on('end', () =>{
 		file.end();
-		//TODO: save to the database
-		// session.id, link, filename
-		console.log('downloaded to ' + fileName);
+		console.log('saved file to ', link.fileName);
+		resolve(link);
 	    });
 	});
     });
 };
 
+//TODO:recieve a list of objects instead
+//with data related to the session
 let downloadRTFs = () => {
     let arr;
     getRTFLinks().then( (links) => {
 	links.reduce( (sequence, link) => {
 	    return sequence.then( () =>{
-		link = host + '/plenaria/'+ link;
-		arr  = link.split('/');
+		let url  = host + '/plenaria/'+ link.link;
+		arr  = url.split('/');
 		let fileName = arr[arr.length - 1];
-		fileName = __dirname + '../rtf/' + fileName;
-		downloadRTF(link, fileName);
+		fileName = __dirname + '/../rtf/' + fileName;
+		link.url = url;
+		link.fileName = fileName;
+		downloadRTF(link).then( (link) => {
+		    console.log('----------------------------');
+		    console.log(link);
+		    saveObjects('downladed_rtf', link);
+		    console.log('----------------------------');
+		});
 	    }).catch( (err) => {
 		console.trace(err);
 	    });
 	}, Promise.resolve());
     });
 };
+
 

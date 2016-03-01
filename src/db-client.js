@@ -10,18 +10,26 @@ export let connectDb = (dburl) => {
 		console.log('Unable to connect to the mongoDB server. Error:', err);
 		reject(err);
 	    } else {
-		//console.log('Connection established to', dburl);
 		resolve(db);
 	    }
 	});
     });
 };
 
-//we are saving this just as they come
-//collection is the name of database collection
 export let saveObjects = (collection, objects) => {
     connectDb(url).then((db) =>{
 	db.collection(collection).insert(objects, (err, inserted) => {
+	    if(err) throw err;
+	    return db.close();
+	});	
+    }).catch( (error) => {
+	console.trace(error);
+    });
+};
+
+export let insertToCollection = (collection, object) => {
+    connectDb(url).then((db) =>{
+	db.collection(collection).insert(object, (err, inserted) => {
 	    if(err) throw err;
 	    return db.close();
 	});	
@@ -41,10 +49,6 @@ export let saveSession = (sesion) =>{
     }).catch( (error) => {
 	console.trace(error);
     });
-};
-
-export let getSessions = () => {
-
 };
 
 export let saveCongressmen = (congressmen) => {
@@ -138,7 +142,8 @@ export let getUniqueBills = () => {
 let getSessionsWithVotings = () => {
     return new Promise( (resolve, reject) => {
 	connectDb(url).then( (db) => {
-	    let cursor = db.collection('sesiones').find({'details.votings.link': {$exists:true}});
+	    let cursor = db.collection('sesiones')
+		    .find({'details.votings.link': {$exists:true}});
 	    let sessions = [];
 	    cursor.each( (error, sesion) => {
 		if (error != null) reject(error);
@@ -161,7 +166,8 @@ export let getRTFLinks = () => {
     		for (let detail of sesion.details){
 		    if(detail.votings !== undefined && detail.votings.length > 0){
 		    	for(let voting of detail.votings){
-		    	    links.push(sesion.id + '/' + voting.link);
+		    	    links.push({session_id: sesion.id,
+					link: sesion.id + '/' + voting.link});
 		    	}
 		    }
     		}
@@ -172,3 +178,107 @@ export let getRTFLinks = () => {
 	});
     });
 };
+
+export let getDownloadedRTF = () =>{
+    return new Promise( (resolve, reject) => {
+	connectDb(url).then( (db) => {
+	    let cursor = db.collection('downladed_rtf').find();
+	    let rtfList = [];
+	    cursor.each( (error, rtf) => {
+		if (error != null) reject(error);
+		if (rtf !== null){
+		    rtfList.push(rtf);
+		}else{
+		    db.close();
+		    resolve(rtfList);
+		}
+	    });
+	}).catch( (error) => {
+	    console.treace(error);
+	});
+    });
+};
+
+export let getVotings = () => {
+    return new Promise( (resolve, reject) => {
+	connectDb(url).then( (db) => {
+	    let result = [];
+	    let cursor = db.collection('votings').find();
+	    cursor.each( (error, voting) => {
+		if (error != null) reject(error);
+		if (voting !== null){
+		    result.push(voting);
+		}else{
+		    db.close();
+		    resolve(result);
+		}
+	    });
+	}).catch( (error) => {
+	    console.treace(error);
+	});
+    });
+};
+
+let getDiputados = () => {
+    return new Promise( (resolve, reject) => {
+	connectDb(url).then( (db) => {
+	    let result = [];
+	    let cursor = db.collection('parlamentarios')
+		    .find({camaraParlamentario : "CAMARA DE DIPUTADOS",
+			   periodoLegislativo: "2013-2018"});
+	    cursor.each( (error, item) => {
+		if (error != null) reject(error);
+		if (item !== null){
+		    result.push(item);
+		}else{
+		    db.close();
+		    resolve(result);
+		}
+	    });
+	}).catch( (error) => {
+	    console.treace(error);
+	});
+    });
+};
+
+
+//structure and data needed for votacionespa
+//get sessions
+/* 
+TODO: save anho when scrapping
+TODO: merge the data comming from session.votings into votings collection
+otherwise update sesiones.votings
+date comes in this format: 7 DE ENERO DE 2015 – 09:22 HS
+
+table asuntos_diputados
+ {asuntoId: <autoincrement>
+  sesion: session.id  ,
+  asunto: votings.subject.title,
+  ano 2015,
+  fecha: votings.date,
+  hora: votings.date,
+  base ,
+  mayoria ,
+  resultado: session.votings.result,
+  presidente: session.PRESIDENTE ,
+//count lists obtained from the voting object
+  presentes int(11) NOT NULL,
+  ausentes int(11) NOT NULL,
+  abstenciones int(11) NOT NULL,
+  afirmativos int(11) NOT NULL,
+  negativos int(11) NOT NULL,
+  votopresidente ,
+  titulo ,
+  permalink ,
+ }
+
+this is a relation many to one to the asuntos_diputados table
+table votaciones_diputados
+ {
+  asuntoId: asuntoId,
+  diputadoId: <get it from diputados table>,
+  bloqueId: <get it from the bloque table>,
+  voto: <get it from voting mongo object>
+ }
+
+*/
