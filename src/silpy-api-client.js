@@ -110,7 +110,6 @@ getUniqueBills().then( (ids) => {
 	while(subindx < 10){
 	    let id = ids[indx];
 	    getDictamenes(id);
-	    console.log('we are in the');
 	    subindx++;
 	    indx++;
 	}

@@ -43,12 +43,3 @@ export let promisifiedExec = (command) => {
     });   
 };
 
-export let rtfToHtml = (baseDir) => {
-    let files = fs.readdirSync(baseDir);
-    let commands = [];
-    for (let file of files){
-	commands.push(util.format('unrtf --html %s', baseDir + file));
-    }
-  return commands;
-};
-
