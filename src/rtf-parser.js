@@ -12,23 +12,24 @@ const baseDir = '/Data/devel/projects/tedic/src/PaScrapper/resources/';
 
 export let votingHTMLParser = (data) => {
     /* parses the html result of the conversion rtf -> html */
-    data = iconv.decode(data, 'utf8');
+    data = iconv.decode(data, 'utf8');    
     let $ = cheerio.load(data);
-    let trList = $('table tr');
+    
+    let trList = $('tr'); //works for some cases
+
     let voting = {};
     voting.yes = [];
     voting.no = [];
     voting.abstention = [];
     voting.excluded = []; //??
-    let keys =  Object.keys(trList);
-    
+    let keys =  Object.keys(trList);    
     const sections = ['Nombre Propuesta:', 'Sí ( Votos:', 'No ( Votos:',
 		      'Abstención (', 'No-Votan ( Total:'];
     let currentSection = '';
     voting.date = trimString($(trList[0]).text());
-    
     for (let key of keys){
 	let tdList = $('td', trList[key]);
+	//vertical division of document sections
 	//1st division: Nombre Propuesta:
 	//2nd division: Sí ( Votos: 66 )
 	//3rd division: No ( Votos: 0 )
@@ -49,7 +50,11 @@ export let votingHTMLParser = (data) => {
 	}else if(firstText.indexOf(sections[4]) > -1){
 	    currentSection = sections[4];
 	}
-	if(currentSection === sections[1]){
+	if(currentSection === sections[0]){
+	    if(trimString($(tdList[1]).text()) !== ''){
+		voting.subject = trimString($(tdList[1]).text());
+	    }
+	}else if(currentSection === sections[1]){
 	    if($(tdList[1]).text() !== ''){
 		voting.yes.push(trimString($(tdList[1]).text()));
 		voting.yes.push(trimString($(tdList[3]).text()));
@@ -65,7 +70,7 @@ export let votingHTMLParser = (data) => {
 	    if($(tdList[1]).text() !== ''){
 		voting.abstention.push(trimString($(tdList[1]).text()));
 		voting.abstention.push(trimString($(tdList[3]).text()));
-		voting.abstentionpush(trimString($(tdList[5]).text()));
+		voting.abstention.push(trimString($(tdList[5]).text()));
 	    }
 	}else if(currentSection === sections[4]){
 	    if($(tdList[1]).text() !== ''){
@@ -75,6 +80,5 @@ export let votingHTMLParser = (data) => {
 	    }
 	}
     }
-    console.log(voting);
     return voting;
 };

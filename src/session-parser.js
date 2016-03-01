@@ -74,16 +74,17 @@ export let parseSession = (data) => {
 					link: $('a', tdList[2]).attr('href')};
 		sessionDetail.audio = $('a', tdList[3]).attr('href');
 		sessionDetail.result = trimString($(tdList[5]).text());
-		//voting
-		let voting = {};
+		//voting		
 		let title = trimString($(tdList[4]).text());;
 		if (title !== '' && title !== '-' && title !== '_'){
-		    voting.title = title;
-		    voting.link = $('a', tdList[4]).attr('href');
-		    sessionDetail.votings.push(voting);
+		    sessionDetail.votings.push({
+				title: title,
+				link: $('a', tdList[4]).attr('href')
+			    });
 		}		
 		let rowspan = $(tdList[0]).attr('rowspan');
 		if (rowspan !== undefined ){
+		    console.log('-- rowspan defined --');
 		    // if 'rowspan' attribute found, next row also contains
 		    // a file for the same order
 		    // at this moment only 4th column is a multirow column
@@ -91,13 +92,14 @@ export let parseSession = (data) => {
 		    //siblings() returns a list of elements without the one that is calls the function
 		    let lastRow = parseInt(key) + parseInt(rowspan) - 1;
 		    let currentRow = key;
-
 		    while (currentRow < lastRow){
 			let nextRow = $(element).siblings()[currentRow];
-			title = trimString($(nextRow).text());
-			if (title !== '' && title !== '-' && title !== '_'){
-			    voting.link = $('a', nextRow).attr('href');
-			    sessionDetail.votings.push(voting);
+			title = trimString($(nextRow).text());			
+			if (title != '' && title != '-' && title != '_'){
+			    sessionDetail.votings.push({
+				title: title,
+				link: $('a', nextRow).attr('href')
+			    });
 			}
 			currentRow++;
 		    }
