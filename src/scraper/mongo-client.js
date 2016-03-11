@@ -27,6 +27,22 @@ export let saveObjects = (collection, objects) => {
     });
 };
 
+export let upsertObject = (collection, object) => {
+    connectDb(url).then((db) =>{
+	console.log('upserting..', object.id);
+	db.collection(collection)
+	    .update({id: object.id},
+		    object,
+		    {upsert: true},
+		    (err, inserted) => {
+			if(err) throw err;
+			return db.close();
+		    });	
+    }).catch( (error) => {
+	console.trace(error);
+    });
+};
+
 export let insertToCollection = (collection, object) => {
     connectDb(url).then((db) =>{
 	db.collection(collection).insert(object, (err, inserted) => {
@@ -52,7 +68,7 @@ export let saveSession = (sesion) =>{
 };
 
 export let saveCongressmen = (congressmen) => {
-    connectDb(url).then(( db) =>{
+    connectDb(url).then( (db) =>{
 	db.collection('congressmen').insert(congressmen, (err, inserted) =>{
 	    if (err) throw err;    
 	    console.dir('Successfully inserted', JSON.stringify(inserted));
@@ -139,7 +155,7 @@ export let getUniqueBills = () => {
 	});;
 };
 
-let getSessionsWithVotings = () => {
+export let getSessionsWithVotings = () => {
     return new Promise( (resolve, reject) => {
 	connectDb(url).then( (db) => {
 	    let cursor = db.collection('sesiones')
@@ -203,23 +219,34 @@ export let getVotings = () => {
     return new Promise( (resolve, reject) => {
 	connectDb(url).then( (db) => {
 	    let result = [];
-	    let cursor = db.collection('votings').find();
+	    //if those list are empty there's nothing to do.
+	    let cursor = db.collection('votings')
+		    .find(
+			{ $or: [
+			    {yes: {$ne: []}},
+			    {no: {$ne: []}},
+			    {abstention: {$ne: []}},
+			    {excluded : {$ne: []}}
+			]});
 	    cursor.each( (error, voting) => {
 		if (error != null) reject(error);
 		if (voting !== null){
 		    result.push(voting);
 		}else{
 		    db.close();
+		    cursor.close();
 		    resolve(result);
+		    
 		}
 	    });
 	}).catch( (error) => {
 	    console.treace(error);
+	    reject(error);
 	});
     });
 };
 
-let getDiputados = () => {
+export let getDiputados = () => {
     return new Promise( (resolve, reject) => {
 	connectDb(url).then( (db) => {
 	    let result = [];
@@ -237,48 +264,52 @@ let getDiputados = () => {
 	    });
 	}).catch( (error) => {
 	    console.treace(error);
+	    reject(error);
 	});
     });
 };
 
+export let getSessionById = (id) => {
+    return new Promise( (resolve, reject) => {
+	connectDb(url).then( (db) =>{
+	    let s = db.collection('sesiones')
+		    .findOne({id: id});
+	    s.then( (data) => {
+		resolve(s);
+		db.close();
+	    });
+	}).catch( (error) => {
+	    console.treace(error);
+	    reject(error);
+	});
+    });
+};
 
-//structure and data needed for votacionespa
-//get sessions
-/* 
-TODO: save anho when scrapping
-TODO: merge the data comming from session.votings into votings collection
-otherwise update sesiones.votings
-date comes in this format: 7 DE ENERO DE 2015 – 09:22 HS
-
-table asuntos_diputados
- {asuntoId: <autoincrement>
-  sesion: session.id  ,
-  asunto: votings.subject.title,
-  ano 2015,
-  fecha: votings.date,
-  hora: votings.date,
-  base ,
-  mayoria ,
-  resultado: session.votings.result,
-  presidente: session.PRESIDENTE ,
-//count lists obtained from the voting object
-  presentes int(11) NOT NULL,
-  ausentes int(11) NOT NULL,
-  abstenciones int(11) NOT NULL,
-  afirmativos int(11) NOT NULL,
-  negativos int(11) NOT NULL,
-  votopresidente ,
-  titulo ,
-  permalink ,
- }
-
-this is a relation many to one to the asuntos_diputados table
-table votaciones_diputados
- {
-  asuntoId: asuntoId,
-  diputadoId: <get it from diputados table>,
-  bloqueId: <get it from the bloque table>,
-  voto: <get it from voting mongo object>
- }
-
-*/
+export let getSessionVotings = (sessionId) => {
+    return new Promise( (resolve, reject) => {
+	connectDb(url).then( (db) => {
+	    let result = [];
+	    //if those list are empty there's nothing to do.
+	    let cursor = db.collection('votings')
+		    .find({session_id: sessionId});
+	    cursor.each( (error, voting) => {
+		if (error != null) reject(error);
+		if (voting !== null){
+		    result.push(voting);
+		}else{
+		    db.close();
+		    cursor.close();
+		    resolve(result);
+		    
+		}
+	    });
+	}).catch( (error) => {
+	    console.treace(error);
+	    reject(error);
+	});
+    });
+};
+//TODO:
+//count diputados
+//db.parlamentarios.find({ $and: [{"periodoLegislativo" : "2013-2018"},
+//{"camaraParlamentario" : "CAMARA DE DIPUTADOS"} ]} ).count();

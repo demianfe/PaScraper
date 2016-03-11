@@ -73,6 +73,7 @@ export let parseSession = (data) => {
 		sessionDetail.subject = {title: trimString($(tdList[2]).text()),
 					link: $('a', tdList[2]).attr('href')};
 		sessionDetail.audio = $('a', tdList[3]).attr('href');
+		//aplazmientos, no se voto
 		sessionDetail.result = trimString($(tdList[5]).text());
 		//voting		
 		let title = trimString($(tdList[4]).text());;
@@ -84,11 +85,10 @@ export let parseSession = (data) => {
 		}		
 		let rowspan = $(tdList[0]).attr('rowspan');
 		if (rowspan !== undefined ){
-		    console.log('-- rowspan defined --');
 		    // if 'rowspan' attribute found, next row also contains
 		    // a file for the same order
 		    // at this moment only 4th column is a multirow column
-		    skippedRows = Array.from(new Array(parseInt(rowspan) - 1), (x, i) => i + parseInt(key)+1);
+		    skippedRows = Array.from(new Array(parseInt(rowspan) - 1), (x, i) => i + parseInt(key)+1);//range of skiped rows
 		    //siblings() returns a list of elements without the one that is calls the function
 		    let lastRow = parseInt(key) + parseInt(rowspan) - 1;
 		    let currentRow = key;

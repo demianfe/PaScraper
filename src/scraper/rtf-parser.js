@@ -1,14 +1,13 @@
 'use strict';
 /* author: demian@tedic.org */
-
 import cheerio from 'cheerio';
 import iconv from 'iconv-lite';
 import { trimString, promisifiedFs, rtfToHtml } from './utils';
 
 const baseDir = '/Data/devel/projects/tedic/src/PaScrapper/resources/';
 
-const sections = ['Nombre Propuesta:', 'Sí ( Votos:', 'No ( Votos:',
-		  'Abstención (', 'No-Votan ( Total:', 'Page 1 of 1'];
+const sections = ['Nombre Propuesta:', 'Sí ( Voto', 'No ( Voto',
+		  'Abstención (', 'No-Vota', 'Page 1 of 1'];
 
 //obj: the object the list is beeing attached to
 //objList: the list the items are pushed to 

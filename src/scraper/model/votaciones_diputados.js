@@ -4,7 +4,8 @@ module.exports = function(sequelize, DataTypes) {
   return sequelize.define('votaciones_diputados', {
     asuntoId: {
       type: DataTypes.INTEGER(11),
-      allowNull: false,
+	allowNull: false,
+	primaryKey: true,
       references: {
         model: 'asuntos_diputados',
         key: 'asuntoId'
@@ -12,7 +13,8 @@ module.exports = function(sequelize, DataTypes) {
     },
     diputadoId: {
       type: DataTypes.INTEGER(11),
-      allowNull: false,
+	allowNull: false,
+	primaryKey: true,
       references: {
         model: 'diputados',
         key: 'diputadoId'
@@ -20,7 +22,8 @@ module.exports = function(sequelize, DataTypes) {
     },
     bloqueId: {
       type: DataTypes.INTEGER(11),
-      allowNull: false,
+	allowNull: false,
+	primaryKey: true,
       references: {
         model: 'bloques_diputados',
         key: 'bloqueId'
