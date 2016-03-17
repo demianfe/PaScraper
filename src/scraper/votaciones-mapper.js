@@ -88,7 +88,7 @@ let createAsuntosDiputados = (voting) => {
     }
     asuntos_diputados.sesion = voting.session_id;
     asuntos_diputados.asunto = voting.subject;
-    asuntos_diputados.ano = '2015';
+    asuntos_diputados.ano = voting.year;
     asuntos_diputados.presidente = voting.president;
     asuntos_diputados.abstenciones = voting.abstention.length;
     asuntos_diputados.afirmativos = voting.yes.length;
@@ -119,15 +119,16 @@ let createVotacionesDiputados = (vote, voting) => {
     votaciones_diputados.asuntoId = voting.asuntoId;
     votaciones_diputados.diputadoId = voting.diputadoId;
     return Diputados
-	.find({where: {diputadoId: voting.diputadoId}}
-	     ).then( (result) => {
-		 if(result === null){
-		     console.log('No se encontró el diputado');
-		 }else{
-		     votaciones_diputados.bloqueId = result.bloqueId;
-		 }
-		 return VotacionesDiputados.create(votaciones_diputados);
-	     });
+	.find(
+	    {where: {diputadoId: voting.diputadoId}}
+	).then( (result) => {
+	    if(result === null){
+		console.log('No se encontró el diputado');
+	    }else{
+		votaciones_diputados.bloqueId = result.bloqueId;
+	    }
+	    return VotacionesDiputados.create(votaciones_diputados);
+	});
 };
 
 let votes = ['yes', 'no', 'asbtention', 'excluded'];

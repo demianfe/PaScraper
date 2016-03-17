@@ -131,9 +131,16 @@ export let removeCollection = (collection, query) => {
     });
 };
 
-export let getUniqueBills = () => {
+export let getUniqueBills = (skip, limit) => {
     return connectDb(url).then( (db) =>{
-	let cursor = db.collection('parlamentario_proyectos').find();
+	let cursor;
+	if(skip !== undefined && limit !== undefined){
+	    cursor = db.collection('parlamentario_proyectos')
+		.find().skip(skip).limit(limit);
+	}else{
+	    cursor = db.collection('parlamentario_proyectos').find();
+	}
+	
 	let uniqueIds = {};
 	return new Promise( (resolve, reject) => {
 	    cursor.each( (error, element) => {
@@ -146,14 +153,29 @@ export let getUniqueBills = () => {
 		    //return ids only
 		    cursor.close();
 		    db.close();
-		    resolve(Object.keys(uniqueIds));
+		    resolve(uniqueIds);
 		}
 	    });
 	});
      }).catch( (error) => {
 	    console.trace(error);
-	});;
+     });;
 };
+
+export let countUniqueBills = () => {
+    return connectDb(url).then( (db) =>{
+	return new Promise( (resolve, reject) => {
+	    db.collection('parlamentario_proyectos').count().then( (result) => {
+		console.log(result);
+		db.close();
+		resolve(result);
+	    });
+	});
+     }).catch( (error) => {
+	    console.trace(error);
+     });;
+};
+
 
 export let getSessionsWithVotings = () => {
     return new Promise( (resolve, reject) => {
@@ -299,8 +321,7 @@ export let getSessionVotings = (sessionId) => {
 		}else{
 		    db.close();
 		    cursor.close();
-		    resolve(result);
-		    
+		    resolve(result);		    
 		}
 	    });
 	}).catch( (error) => {
@@ -309,7 +330,36 @@ export let getSessionVotings = (sessionId) => {
 	});
     });
 };
-//TODO:
-//count diputados
-//db.parlamentarios.find({ $and: [{"periodoLegislativo" : "2013-2018"},
-//{"camaraParlamentario" : "CAMARA DE DIPUTADOS"} ]} ).count();
+
+export let congressmanBills = (congressmanId) => {
+    return connectDb(url).then( (db) => {
+	let obj = db.collection('parlamentario_proyectos')
+		.findOne({"idParlamentario" : Number.parseInt(congressmanId)})
+		.then( (result) => {
+		    db.close();
+		    return result;
+		});
+	return obj; 
+    });
+};
+
+export let congressmenBills = () => {
+    return new Promise( (resolve, reject) =>{
+	let result = [];
+	connectDb(url).then( (db) => {
+	    let cursor = db.collection('parlamentario_proyectos').find();
+	    cursor.each( (error, item) => {
+		if (error != null) reject(error);
+		if (item != null){
+		    result.push(item);
+		}else{
+		    cursor.close();
+		    db.close();
+		    resolve(result);
+		}
+	    });
+	});
+    });
+};
+
+countUniqueBills();

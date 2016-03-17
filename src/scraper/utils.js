@@ -43,3 +43,14 @@ export let promisifiedExec = (command) => {
     });   
 };
 
+export let checkFileExistence = (fileName) => {
+    //returns true if it does not exists
+    //rejects if it does not.
+    return new Promise( (resolve, reject) => {
+	fs.access(fileName, fs.F_OK,  (err) => {
+	    if(err) reject(err);
+	    resolve(true);
+	});	
+    });
+};
+
