@@ -18,10 +18,10 @@ export let connectDb = (dburl) => {
 
 export let saveObjects = (collection, objects) => {
     connectDb(url).then((db) =>{
-	db.collection(collection).insert(objects, (err, inserted) => {
-	    if(err) throw err;
-	    return db.close();
-	});	
+	    db.collection(collection).insert(objects, (err, inserted) => {   
+		if(err) throw err;
+		return db.close();
+	    });
     }).catch( (error) => {
 	console.trace(error);
     });
@@ -137,18 +137,22 @@ export let getUniqueBills = () => {
     return connectDb(url).then( (db) =>{
 	let cursor = db.collection('parlamentario_proyectos').find();
 	let uniqueIds = {};
+	let result = [];
 	return new Promise( (resolve, reject) => {
 	    cursor.each( (error, element) => {
 		if (element != null){
 		    element.proyectos.forEach( (project) => {
 			if (project != null )
-			    uniqueIds[project.idProyecto] = project;
+			    if (project.idProyecto in uniqueIds == false){
+				uniqueIds[project.idProyecto] = project;
+				result.push(project);
+			    }
 		    });
 		}else{
 		    //return ids only
 		    cursor.close();
 		    db.close();
-		    resolve(uniqueIds);
+		    resolve(result);
 		}
 	    });
 	});
@@ -365,7 +369,7 @@ export let getBills = (skip, limit) => {
 		cursor = db.collection('bills')
 		    .find().skip(skip).limit(limit);
 	    }else{
-		cursor = db.collection('bills').find().skip(1000).limit(1);
+		cursor = db.collection('bills').find();
 	    }
 	    let result = [];
 	    cursor.each( (error, item) => {

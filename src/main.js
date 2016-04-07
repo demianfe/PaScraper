@@ -9,7 +9,8 @@
 
 import { crawlSessions, downloadRTFs, parseRTFandSave } from './scraper/votaciones-main';
 import { mapAllToVotaciones } from './scraper/votaciones-mapper';
-import mapAllBills from './scraper/billit-mapper';
+import { downloadBills } from './scraper/silpy-api-client.js';
+import { mapAllBills }  from './scraper/billit-mapper';
 
 //first argment is node path
 //seccond is directory where it is runing
@@ -23,6 +24,8 @@ let printHelp = () => {
     console.log("--download-rtfs \t downlad rtf files stored in the data base.");
     console.log("--parse-rtfs \t\t parses all dowonloaded rtfs and saves to monto db.");
     console.log("--map-votaciones \t maps diputados and voting results to votacionespa.");
+    console.log("--download-bills \t\ Download all bills related to all congressmen \n \
+\t\t\t within this parlamentary period.");
     console.log("--map-bills \t\t maps all bills to bill-it.");
 };
 switch (command){
@@ -44,6 +47,10 @@ case "--parse-rtfs":
     break;
 case "--map-votaciones":
     mapAllToVotaciones();
+    break;
+case "--download-bills":
+    downloadBills();
+    break;
 case "--map-bills":
     mapAllBills();
     console.log("Uninemplented yet.");

@@ -4,11 +4,11 @@ import request from 'request-promise';
 
 import { promisifiedExec, checkFileExistence, promisifiedWriteFs } from './utils';
 import { saveObjects, removeCollection, saveCongressmen, congressmenBills, upsertObject, getBills, 
-	 countUniqueBills, getCongressmanById, getCongressmenByPeriod, getUniqueBills } from './mongo-client';
+	 getCongressmanById, getCongressmenByPeriod, getUniqueBills } from './mongo-client';
 import { parseBillHtml } from './silpy-htmlbill-parser';
 
 const baseUri = 'http://datos.congreso.gov.py/opendata/api/data/';
-const fileBaseDir = '/tmp/download/bills/'; //__dirname + '/../../bills/';
+const fileBaseDir = '/tmp/parlamentoabierto/bills/'; //__dirname + '/../../bills/';
 //dirname = 'download/bills/%s/documents' %(project_id)
 
 let options  = {
@@ -177,28 +177,40 @@ let downloadBillFile = (link) => {
 };
 
 //download all bills
-let downloadBills = () => {
-    getBills().then( (bills) => {
-	bills.reduce( (sequence, bill) => {
-	    return sequence.then( () => {
-		//download files
-		return request(bill.appURL).then( (content) => {
-		    //download file
-		    //parseBillHtml(content)[0]; -> ignora antecedentes
-		    let link = parseBillHtml(content)[0];
-		    let base = link.link.split(';')[0];
-		    link.link = base + link.link.substring(link.link.indexOf('?'));
-		    return downloadBillFile(link).then( (file) => {
-			//TODO: upsert
-			bill.file = file;
-			upsertObject('bills', bill);
+export let downloadBills = () => {
+    //first get all bill related to all congressmen
+    //bills are not repeated, and save them to a new collection
+    getUniqueBills().then( (bills) => {
+	removeCollection('bills').then( () => {
+	    console.log('All bills removed...');
+	    saveObjects('bills', bills);
+	});
+    }).then( () => {
+	//then download all related data and files for each bill
+	console.log('Will download bills related data and files');
+	getBills().then( (bills) => {
+	    console.log(bills.length);
+	    bills.reduce( (sequence, bill) => {
+		return sequence.then( () => {
+		    //download files
+		    return request(bill.appURL).then( (content) => {
+			//download file
+			//parseBillHtml(content)[0]; -> ignora antecedentes
+			let link = parseBillHtml(content)[0];
+			let base = link.link.split(';')[0];
+			link.link = base + link.link.substring(link.link.indexOf('?'));
+			return downloadBillFile(link).then( (file) => {
+			    bill.file = file;
+			    console.log(bill);
+			    upsertObject('bills', bill);
+			});
+		    }).catch( (error) => {
+			console.log(error);
 		    });
 		}).catch( (error) => {
 		    console.log(error);
 		});
-	    }).catch( (error) => {
-		console.log(error);
-	    });
-	}, Promise.resolve());
+	    }, Promise.resolve());
+	});
     });
 };
