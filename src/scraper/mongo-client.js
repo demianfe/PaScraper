@@ -29,9 +29,9 @@ export let saveObjects = (collection, objects) => {
 
 export let upsertObject = (collection, object) => {
     connectDb(url).then((db) =>{
-	console.log('upserting..', object.id);
+	console.log('upserting..', object._id);
 	db.collection(collection)
-	    .update({id: object.id},
+	    .update({_id: object._id},
 		    object,
 		    {upsert: true},
 		    (err, inserted) => {
@@ -131,16 +131,11 @@ export let removeCollection = (collection, query) => {
     });
 };
 
-export let getUniqueBills = (skip, limit) => {
+export let getUniqueBills = () => {
+    //this function returns the bills
+    //associated to every congressman
     return connectDb(url).then( (db) =>{
-	let cursor;
-	if(skip !== undefined && limit !== undefined){
-	    cursor = db.collection('parlamentario_proyectos')
-		.find().skip(skip).limit(limit);
-	}else{
-	    cursor = db.collection('parlamentario_proyectos').find();
-	}
-	
+	let cursor = db.collection('parlamentario_proyectos').find();
 	let uniqueIds = {};
 	return new Promise( (resolve, reject) => {
 	    cursor.each( (error, element) => {
@@ -163,19 +158,18 @@ export let getUniqueBills = (skip, limit) => {
 };
 
 export let countUniqueBills = () => {
+    //is this actually needed ?
     return connectDb(url).then( (db) =>{
 	return new Promise( (resolve, reject) => {
-	    db.collection('parlamentario_proyectos').count().then( (result) => {
-		console.log(result);
-		db.close();
-		resolve(result);
+	  db.collection('bills').count().then( (result) => {
+	      resolve(result);
+	      db.close();
 	    });
 	});
      }).catch( (error) => {
 	    console.trace(error);
      });;
 };
-
 
 export let getSessionsWithVotings = () => {
     return new Promise( (resolve, reject) => {
@@ -362,4 +356,30 @@ export let congressmenBills = () => {
     });
 };
 
-countUniqueBills();
+export let getBills = (skip, limit) => {
+    //this function brings all bills from bills collection
+    return new Promise( (resolve, reject) =>{
+	let cursor;
+	connectDb(url).then( (db) => {
+	    if(skip !== undefined && limit !== undefined){
+		cursor = db.collection('bills')
+		    .find().skip(skip).limit(limit);
+	    }else{
+		cursor = db.collection('bills').find().skip(1000).limit(1);
+	    }
+	    let result = [];
+	    cursor.each( (error, item) => {
+		if (error != null) reject(error);
+		if (item != null){
+		    result.push(item);
+		}else{
+		    cursor.close();
+		    db.close();
+		    resolve(result);
+		}
+	    });
+	});
+    });
+};
+
+;
