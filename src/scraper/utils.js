@@ -34,12 +34,13 @@ export let promisifiedWriteFs = (uri, content) => {
     });
 };
 
-export let promisifiedExec = (command) => {
-     return new Promise((resolve, reject) => {
-    	 exec.exec(command, (error, stdout, stderr) => {
-	     if(error) reject(error);
-    	     resolve(stdout);
-    	 });
+export let promisifiedExec = (command, options=undefined) => {
+    //TODO: extract fs options
+    return new Promise((resolve, reject) => {
+    	exec.exec(command, options, (error, stdout, stderr) => {
+	    if(error) reject(error);
+    	    resolve(stdout);
+    	});
     });   
 };
 
