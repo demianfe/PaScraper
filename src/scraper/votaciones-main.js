@@ -34,35 +34,37 @@ let parseSessionList = (htmlString) => {
 // Navigation section
 let options = {
     method: 'POST',
-    uri: baseUrl,
-    form: {anho: '2013'}
+    uri: baseUrl
+    //form: {anho: '2013'}
 };
 
-export let crawlSessions = (queryObj) => request(options).then( (htmlString) => {    
+export let crawlSessions = (queryObj) => {
     options.form = Object.assign({}, queryObj);
-    console.log('Downloading sessions from: ', options.form.anho);
-    // Process html...
-    let html = iconv.decode(new Buffer(htmlString), 'win1252');
-    let links = parseSessionList(htmlString);
-    links.reduce( (sequence, link) => {
-	return sequence.then( () => {
-	    return request({url: link, encoding: 'binary'}) .then( (body) => {
-		console.log('Downloading => ', link);
-		let sessionHtml = iconv.decode(body, 'win1252');
-		let session = parseSession(sessionHtml);
-		session.year = options.form.anho;
-		session.url = link;
-		let arr = link.split('/');
-		session.id = arr[arr.length - 1];
-		saveSession(session);
+    request(options).then( (htmlString) => {    
+	console.log('Downloading sessions from: ', options.form.anho);
+	// Process html...
+	let html = iconv.decode(new Buffer(htmlString), 'win1252');
+	let links = parseSessionList(htmlString);
+	links.reduce( (sequence, link) => {
+	    return sequence.then( () => {
+		return request({url: link, encoding: 'binary'}) .then( (body) => {
+		    console.log('Downloading => ', link);
+		    let sessionHtml = iconv.decode(body, 'win1252');
+		    let session = parseSession(sessionHtml);
+		    session.year = options.form.anho;
+		    session.url = link;
+		    let arr = link.split('/');
+		    session.id = arr[arr.length - 1];
+		    saveSession(session);
+		});
+	    }).catch( (err) => {
+		console.trace(err);
 	    });
-	}).catch( (err) => {
-	    console.trace(err);
-	});
-    }, Promise.resolve());
-}).catch( (err) => {
-    console.trace(err);
-});
+	}, Promise.resolve());
+    }).catch( (err) => {
+	console.trace(err);
+    });
+};
 
 let downloadRTF = (link) => {
     return new Promise( (resolve, reject) => {

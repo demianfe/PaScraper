@@ -44,26 +44,36 @@ let findBestMatch = (person) => {
 	options.body = queryData;
 	return request(options).then( (response) => {
 	    if(response.hits !== undefined && response.hits.hits !== undefined
-	      && response.hits.hits.length > 0 ){
-		resolve({id: response.hits.hits[0]._id,
-			 name: response.hits.hits[0]._source.name});
+	       && response.hits.hits.length > 0 ){
+		   let results = [];
+		   console.log('Found ', response.hits.hits.length, ' hits.');
+		   response.hits.hits.forEach( (hit) => {
+		       resolve(results);
+		       results.push({id: hit._id,
+				     name: hit._source.name,
+				     score: hit._score});
+		       		   });		   
+		   resolve(results);
 	      }else{
 		  console.log('No match found for ', person);
-		  reject();
+		  reject(person);
 	      }
 	});
     });
 };
 
 //TODO: data cleaning
-//Víctor González S. wrong
+//guardar los puntajes
+//cuando la disrtibucion de puntajes es equitativa es porque no encontro
+// si se retorna un reject es porque la no hay coincidencias
 let iterateAndMatch = (vote, array) => {
     return new Promise( (resolve, reject) =>{
 	let matches = [];
 	//let count = 0;
 	return array.reduce( (sequence2, person) => {  
 	    return sequence2.then( () => {
-		return findBestMatch(person).then( (match) => {
+		return findBestMatch(person).then( (results) => {
+		    let match = results[0];
 		    matches.push(match);
 		    //WARNING: could go into an infinite loop
 		    if(matches.length === array.length){
@@ -197,7 +207,10 @@ let mapDiputados = () => {
     });
 };
 
-mapDiputados().then( () => {
-    mapVotings();
-});
+export let mapAllToVotaciones = () => {
+    mapDiputados().then( () => {
+	mapVotings();
+    });
+};
+
 
