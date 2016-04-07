@@ -6,3 +6,5 @@ bundle/
 *~
 resources/*
 rtf/*
+lib/*
+bills/*

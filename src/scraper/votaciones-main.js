@@ -154,7 +154,3 @@ let parseRTF = () => {
 	}
     });    
 };
-
-parseRTF();
-//crawlSessions();
-//downloadRTFs();
