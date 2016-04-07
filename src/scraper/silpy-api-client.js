@@ -1,11 +1,15 @@
+
+import fs from 'fs';
 import request from 'request-promise';
 
 import { promisifiedExec, checkFileExistence, promisifiedWriteFs } from './utils';
-import { saveObjects, removeCollection, saveCongressmen, congressmenBills,
-	 getCongressmanById, getCongressmenByPeriod, getUniqueBills } from './mongo-client';
+import { saveObjects, removeCollection, saveCongressmen, congressmenBills, upsertObject, getBills, 
+	 countUniqueBills, getCongressmanById, getCongressmenByPeriod, getUniqueBills } from './mongo-client';
 import { parseBillHtml } from './silpy-htmlbill-parser';
 
 const baseUri = 'http://datos.congreso.gov.py/opendata/api/data/';
+const fileBaseDir = '/tmp/download/bills/'; //__dirname + '/../../bills/';
+//dirname = 'download/bills/%s/documents' %(project_id)
 
 let options  = {
     method: 'GET',
@@ -24,21 +28,52 @@ let getParlamentarios = () => {
 	});
 };
 
-//proyecto de ley
-let getProyecto = (args) => {
-    //bill itself
-    options.uri = baseUri + 'proyecto/'+ args.billId;
-    request(options)
-	.then((body) => {
-	    console.log('guardando proyecto ');
-	    if(body.dictamenes != null );{
-		saveObjects('proyectos', body);
-	    }
-	}).catch( (err) => {
-	    console.log('....failed');
-	    console.trace(err);
-	});
+//dictamenes
+let getDictamenes = (billId) => {
+    options.uri = baseUri + 'proyecto/' + billId + '/dictamenes';
+    console.log('Obteniendo dictamenes: ', options.uri);
+    return new Promise( (resolve, reject) => {
+	request(options)
+	    .then((body) => {
+		saveObjects('dictamenes', body);
+		resolve(body);
+	    }).catch( (err) => {
+		console.trace(err);
+		reject(err);
+	    });
+    });
 };
+
+//tramitaciones
+let getTramitaciones = (billId) => {
+    options.uri = baseUri + 'proyecto/'+ billId + '/tramitaciones';
+    console.log('Obteniendo tramitaciones: ', options.uri);
+    return new Promise( (resolve, reject) => {
+	request(options)
+	    .then((body) => {
+		saveObjects('tramitaciones', body);
+		resolve(body);
+	}).catch( (err) => {
+	    console.trace(err);
+	    reject(err);
+	});
+    });
+};
+
+let getAutores = (billId) => {
+    options.uri = baseUri + 'proyecto/'+ billId + '/autores';
+    console.log('Obteniendo autores: ', options.uri);
+    return new Promise( (resolve, reject) => {
+	request(options)
+	    .then((body) => {
+		resolve(body);
+	}).catch( (err) => {
+	    console.trace(err);
+	    reject(err);
+	});
+    });
+};
+
 
 //get bills by congressmen
 let getProyectosPorParlamentario = (parlamentarioId) => {
@@ -74,98 +109,96 @@ let updateCongressmenBills = () => {
     });
 };
 
+let getProyecto = (billId) => {
+    options.uri = baseUri + 'proyecto/'+ billId;
+	return request(options)
+	    .then((bill) => {
+		return bill;
+	    }).then( (bill) => {
+		getTramitaciones(billId).then( (tramitaciones) => {
+		    return Object.assign({}, bill, tramitaciones);
+		}).then( (obj) => {
+		    getAutores(billId).then( (autores) => {
+			return Object.assign({}, obj, autores);
+		    }).then( (obj1) => {
+			getDictamenes(billId).then( (dictamenes) => {
+			    obj1 = Object.assign({}, obj1, dictamenes);
+			    saveObjects('bills', obj1);
+			});
+		    });
+		});
+	    }).catch( (err) => {
+		console.log('....failed');
+		console.trace(err);
+	    });
+};
 
+let getBillsRelatedData = () => {
+    getUniqueBills().then( (bills) => {	
+	Object.keys(bills).reduce( (sequence, billId) => {
+	    return sequence.then( () => {
+		//download files
+		return getProyecto(billId).then( () => {
+		    console.log('Proyecto ', billId, ' descargado correctamente.');
+		}).catch( (error) => {
+		    console.log(error);
+		});
+	    }).catch( (error) => {
+		console.log(error);
+	    });
+	}, Promise.resolve());
+    });
+};
+
+
+//base_dir = download/bills/D-1433124/documents/ANTECEDENTE-D-1433124.PDF
 let downloadBillFile = (link) => {
     return new Promise( (resolve, reject) => {
 	console.log('Downloading: ', link.link);
-	let output = __dirname + '/../../bills/' + link.name;
-	return checkFileExistence(output).then( () => {
-	    console.log('File already exists: ', output );
-	}).catch( (error) => {
-	    //file does not exists, so we create it
-	    //return promisifiedExec('curl ' + link.link + ' -o ' + output)
-	    request({url: link.link, encoding: 'binary'})
-		.then( (data) => {
-		    promisifiedWriteFs(output, data).then( () => {
-			link.file = output;
-			resolve(link);
+	let outFile = fileBaseDir  + 'documents/' + link.name;
+	//file does not exists, so we create it
+	//return promisifiedExec('curl ' + link.link + ' -o ' + output)
+	if(!fs.existsSync (outFile)){
+	    //TODO: add max buffer size to invocation
+	    let maxBufferSize = link.size + link.size*0.30; //30% greater just in case
+	    let command = 'curl -o' + outFile + ' ' + link.link;
+	    promisifiedExec(command, {maxBuffer: maxBufferSize})
+		.then( (output) =>{
+		    console.log('File saved to: ', outFile);
+		    resolve(outFile);
+		}).catch( (error) => {
+		    console.log(error);
+		});
+	}else{
+	    console.log('File already exists: --->', outFile );
+	    resolve(outFile);
+	}
+    });
+};
+
+//download all bills
+let downloadBills = () => {
+    getBills().then( (bills) => {
+	bills.reduce( (sequence, bill) => {
+	    return sequence.then( () => {
+		//download files
+		return request(bill.appURL).then( (content) => {
+		    //download file
+		    //parseBillHtml(content)[0]; -> ignora antecedentes
+		    let link = parseBillHtml(content)[0];
+		    let base = link.link.split(';')[0];
+		    link.link = base + link.link.substring(link.link.indexOf('?'));
+		    return downloadBillFile(link).then( (file) => {
+			//TODO: upsert
+			bill.file = file;
+			upsertObject('bills', bill);
 		    });
 		}).catch( (error) => {
 		    console.log(error);
 		});
-	});
-    });
-};
-//download all bills
-let downloadBills = () => {
-    congressmenBills().then( (results) => {
-	results.reduce ( (sequence, congressman) => {
-	    return sequence.then( () => {
-		return congressman.proyectos.reduce( (sequence1, bill) => {
-		    return sequence1.then( () => {		    
-			return request(bill.appURL).then( (content) => {
-			    //download file
-			    //parseBillHtml(content)[0]; -> ignora antecedentes
-			    return downloadBillFile(parseBillHtml(content)[0]).then( (link) => {
-				//get project from silpy-api
-				return getProyecto({billId: bill.idProyecto,
-						    link: link.link,
-						    file: link.file});
-				
-			    });
-			});
-		    });
-		}, Promise.resolve());
-	    }).catch( (error) =>{
-		console.trace(error);
-	    });
-	}, Promise.resolve());
-    }).catch( (error) =>{
-	console.trace(error);
-    });
-};
-
-
-//dictamenes
-let getDictamenes = (billId) => {
-    options.uri = baseUri + 'proyecto/' + billId + '/dictamenes';
-    return request(options)
-	.then((body) => {
-	    //console.log('guardando dictamen ' + );
-	    console.log('Guardando dictamen');
-	    saveObjects('dictamenes', body);
-	}).catch( (err) => {
-	    console.log('....failed');
-	    console.trace(err);
-	});
-};
-
-//tramitaciones
-let getTramitaciones = (billId) => {
-    //bill itself
-    options.uri = baseUri + 'proyecto/'+ billId + '/tramitaciones';
-    return request(options)
-	.then((body) => {
-	    //save tramitacion as it comes
-	    console.log('guardando tramitacion ');
-	    saveObjects('tramitaciones', body);
-	}).catch( (err) => {
-	    console.log('....failed');
-	    console.trace(err);
-	});
-};
-
-let getBillsRelatedData = () => {
-    getUniqueBills().then( (bills) => {
-	let indx = 0;
-	Object.values(bills).reduce( (sequence, bill) => {
-	    return sequence.then( () => {
-		//download files
-		return getDictamenes(bill.idProyecto).then( () => {
-		    return getTramitaciones(bill.idProyecto);
-		});
+	    }).catch( (error) => {
+		console.log(error);
 	    });
 	}, Promise.resolve());
     });
 };
-
