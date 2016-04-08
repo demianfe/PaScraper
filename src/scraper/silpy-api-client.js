@@ -137,25 +137,25 @@ export let getBillsRelatedData = () => {
     getUniqueBills().then( (bills) => {
 	removeCollection('bills').then( () => {
 	    console.log('All bills removed...');
-	    saveObjects('bills', bills);
 	    return bills;
 	}).then( (bills) => {
-	    console.log(bills);
-	    getBills().then( (bills) => {
-		bills.reduce( (sequence, bill) => {
-		    return sequence.then( () => {
-			//download files
-			return getProyecto(bill.idProyecto).then( () => {
-			    console.log('Proyecto ', bill.idProyecto, ' descargado correctamente.');
-			}).catch( (error) => {
-			    console.log(error);
-			});
+	    bills.reduce( (sequence, bill) => {
+		return sequence.then( () => {
+		    //download files
+		    return getProyecto(bill.idProyecto).then( () => {
+			console.log('Proyecto ', bill.idProyecto, ' descargado correctamente.');
 		    }).catch( (error) => {
 			console.log(error);
 		    });
-		}, Promise.resolve());
-	    });
+		}).catch( (error) => {
+		    console.log(error);
+		});
+	    }, Promise.resolve());
+	}).catch( (error) => {
+	    console.log(error);
 	});
+    }).catch( (error) => {
+	console.log(error);
     });
 };
 
