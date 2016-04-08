@@ -133,25 +133,32 @@ let getProyecto = (billId) => {
 	    });
 };
 
-let getBillsRelatedData = () => {
-    getUniqueBills().then( (bills) => {	
-	Object.keys(bills).reduce( (sequence, billId) => {
-	    return sequence.then( () => {
-		//download files
-		return getProyecto(billId).then( () => {
-		    console.log('Proyecto ', billId, ' descargado correctamente.');
-		}).catch( (error) => {
-		    console.log(error);
-		});
-	    }).catch( (error) => {
-		console.log(error);
+export let getBillsRelatedData = () => {
+    getUniqueBills().then( (bills) => {
+	removeCollection('bills').then( () => {
+	    console.log('All bills removed...');
+	    saveObjects('bills', bills);
+	    return bills;
+	}).then( (bills) => {
+	    console.log(bills);
+	    getBills().then( (bills) => {
+		bills.reduce( (sequence, bill) => {
+		    return sequence.then( () => {
+			//download files
+			return getProyecto(bill.idProyecto).then( () => {
+			    console.log('Proyecto ', bill.idProyecto, ' descargado correctamente.');
+			}).catch( (error) => {
+			    console.log(error);
+			});
+		    }).catch( (error) => {
+			console.log(error);
+		    });
+		}, Promise.resolve());
 	    });
-	}, Promise.resolve());
+	});
     });
 };
 
-
-//base_dir = download/bills/D-1433124/documents/ANTECEDENTE-D-1433124.PDF
 let downloadBillFile = (link) => {
     return new Promise( (resolve, reject) => {
 	console.log('Downloading: ', link.link);
@@ -168,6 +175,7 @@ let downloadBillFile = (link) => {
 		    resolve(outFile);
 		}).catch( (error) => {
 		    console.log(error);
+		    reject(error);
 		});
 	}else{
 	    console.log('File already exists: --->', outFile );
@@ -178,39 +186,28 @@ let downloadBillFile = (link) => {
 
 //download all bills
 export let downloadBills = () => {
-    //first get all bill related to all congressmen
-    //bills are not repeated, and save them to a new collection
-    getUniqueBills().then( (bills) => {
-	removeCollection('bills').then( () => {
-	    console.log('All bills removed...');
-	    saveObjects('bills', bills);
-	});
-    }).then( () => {
-	//then download all related data and files for each bill
-	console.log('Will download bills related data and files');
-	getBills().then( (bills) => {
-	    console.log(bills.length);
-	    bills.reduce( (sequence, bill) => {
-		return sequence.then( () => {
-		    //download files
-		    return request(bill.appURL).then( (content) => {
-			//download file
-			//parseBillHtml(content)[0]; -> ignora antecedentes
-			let link = parseBillHtml(content)[0];
-			let base = link.link.split(';')[0];
-			link.link = base + link.link.substring(link.link.indexOf('?'));
-			return downloadBillFile(link).then( (file) => {
-			    bill.file = file;
-			    console.log(bill);
-			    upsertObject('bills', bill);
-			});
-		    }).catch( (error) => {
-			console.log(error);
+    console.log('Will download bills files.');
+    getBills().then( (bills) => {
+	console.log(bills.length);
+	bills.reduce( (sequence, bill) => {
+	    return sequence.then( () => {
+		//download files
+		return request(bill.appURL).then( (content) => {
+		    //download file
+		    //parseBillHtml(content)[0]; -> ignora antecedentes
+		    let link = parseBillHtml(content)[0];
+		    let base = link.link.split(';')[0];
+		    link.link = base + link.link.substring(link.link.indexOf('?'));
+		    return downloadBillFile(link).then( (file) => {
+			bill.file = file;
+			upsertObject('bills', bill);
 		    });
 		}).catch( (error) => {
 		    console.log(error);
 		});
-	    }, Promise.resolve());
-	});
+	    }).catch( (error) => {
+		console.log(error);
+	    });
+	}, Promise.resolve());
     });
 };

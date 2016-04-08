@@ -1,15 +1,8 @@
 #!/usr/bin/env node
 
-//TODO: add all calls to the rest of the scripts
-
-//crawl sessions
-//download rtf
-//parse rtf
-//map votaciones
-
 import { crawlSessions, downloadRTFs, parseRTFandSave } from './scraper/votaciones-main';
 import { mapAllToVotaciones } from './scraper/votaciones-mapper';
-import { downloadBills } from './scraper/silpy-api-client.js';
+import { getBillsRelatedData, downloadBills } from './scraper/silpy-api-client.js';
 import { mapAllBills }  from './scraper/billit-mapper';
 
 //first argment is node path
@@ -26,6 +19,8 @@ let printHelp = () => {
     console.log("--map-votaciones \t maps diputados and voting results to votacionespa.");
     console.log("--download-bills \t\ Download all bills related to all congressmen \n \
 \t\t\t within this parlamentary period.");
+    console.log("--download-bills-files \t\ Download files related to bills. \n\
+\t\t\t --download-bills should be executed before.");
     console.log("--map-bills \t\t maps all bills to bill-it.");
 };
 switch (command){
@@ -49,6 +44,9 @@ case "--map-votaciones":
     mapAllToVotaciones();
     break;
 case "--download-bills":
+    getBillsRelatedData();
+    break;
+case "--download-bills-files":
     downloadBills();
     break;
 case "--map-bills":

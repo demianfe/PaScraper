@@ -154,8 +154,7 @@ let mapVotings = () => {
 				return iterateAndMatch(vote, voting[vote]).then( (matches) => {				    
 				    for(let match of matches){
 					voting.asuntoId = asunto.asuntoId;
-					voting.diputadoId = match.id;
-					
+					voting.diputadoId = match.id;		
 					createVotacionesDiputados(vote, voting).then( (result) => {
 					    console.log('created: ', result.asuntoId, result.diputadoId);
 					}).catch( (error) =>{
