@@ -1,6 +1,6 @@
 /*
  author: Demian Florentin<demian@tedic.org>
-*/
+ */
 
 import Sequelize from 'sequelize';
 import request from 'request-promise';
@@ -10,7 +10,7 @@ import { getVotings, getDiputados,
 /**
  sequelize mysql db definition and initialization
 
-**/
+ **/
 let sequelize = new Sequelize('votacionespa', 'carga', '123456', {
     host: 'localhost',
     dialect: 'mysql',
@@ -52,12 +52,12 @@ let findBestMatch = (person) => {
 		       results.push({id: hit._id,
 				     name: hit._source.name,
 				     score: hit._score});
-		       		   });		   
+		   });
 		   resolve(results);
-	      }else{
-		  console.log('No match found for ', person);
-		  reject(person);
-	      }
+	       }else{
+		   console.log('No match found for ', person);
+		   reject(person);
+	       }
 	});
     });
 };
@@ -65,7 +65,7 @@ let findBestMatch = (person) => {
 //TODO: data cleaning
 //guardar los puntajes
 //cuando la disrtibucion de puntajes es equitativa es porque no encontro
-// si se retorna un reject es porque la no hay coincidencias
+//si se retorna un reject es porque la no hay coincidencias
 let iterateAndMatch = (vote, array) => {
     return new Promise( (resolve, reject) =>{
 	let matches = [];
@@ -187,20 +187,19 @@ let mapDiputados = () => {
 		}
 		BloquesDiputados
 		    .find({where: { bloque: partido }
-			     }).then( (result) => {
-				 let bloqueId = result.bloqueId;
-				 Diputados
-				     .create({diputadoId: diputado.idParlamentario,
-	     			 	      nombre: nombre,
-	     			 	      distrito: diputado.departamento,
-				 	      bloqueId: bloqueId
-				 	     }).then( (d) => {
-				 		 console.log('Created diputado: ', d.nombre);
-				 	     }).catch( (error) => {
-				 		 console.log('Partido politico ', diputado.partidoPolitico);
-				 		 console.trace(error);
-				 	     });
-			     }) ;
+			  }).then( (result) => {
+			      let bloqueId = result.bloqueId;
+			      Diputados.create({diputadoId: diputado.idParlamentario,
+	     			 		nombre: nombre,
+	     			 		distrito: diputado.departamento,
+				 		bloqueId: bloqueId
+					       }).then( (d) => {
+						   console.log('Created diputado: ', d.nombre);
+					       }).catch( (error) => {
+						   console.log('Partido politico ', diputado.partidoPolitico);
+						   console.trace(error);
+					       });
+			  }) ;
 	    });
 	}, Promise.resolve());
     });
@@ -211,5 +210,4 @@ export let mapAllToVotaciones = () => {
 	mapVotings();
     });
 };
-
 

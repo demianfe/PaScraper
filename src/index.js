@@ -6,7 +6,7 @@
 
 import express from 'express';
 import url from 'url';
-import { downloadRTFs, crawlSessions } from './scraper/votaciones-main';
+import { downloadRTFs, crawlSessions } from './scraper/votaciones-main'
 
 let app = express();
 

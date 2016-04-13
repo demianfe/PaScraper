@@ -3,7 +3,8 @@ import request from 'request-promise';
 import { getBills, countUniqueBills, getUniqueBills } from './mongo-client'
 
 ;
-const host = 'http://localhost:8002';
+//const host = 'http://localhost:8002';
+const host = 'http://parlamentoabierto.org.py:8002';
 const secret_token = '75cc973db60d3e07beaa1630c4cb37ded228e5bb71853be068a573b1a2ee385379111f9b12847b285a7e2c2b2f918b2902f4edb04046319cf41148a642fa53d3';
 
 
@@ -143,12 +144,6 @@ let mapBillit = () => {
     let end = offset;
     countUniqueBills().then( (total) => {
 	console.log('total', total);
-	// while (end < total){
-	//     if (total - end > offset){
-	// 	end += offset;
-	//     }else{
-	// 	end = total;
-	//     }
 	console.log('about to call getBills');
 	let count = 0;
 	getBills().then( (bills) => {
@@ -159,19 +154,28 @@ let mapBillit = () => {
 		    console.log('count', count);
 		    console.log("-------------------------");
 		    return postProjects(bill);
-		    // 
-		    // console.log( "start ",start);
-		    // console.log("end ", end);
-		    // console.log( "diff ", total - end);
-		    // console.log("-------------------------");
-		    // start = end;
 		}).catch( (err) => {
 		    console.trace(err);
 		});
 	    }, Promise.resolve());
 	});
-	//	}
     });
 };
 
-mapBillit();
+//helper function to change
+//bill-it uid with the id used in silpy
+//expedienteCamara is currently used as uid
+let updateBillIds = () => {
+    getBills().then( (bills) => {
+	for(let bill of bills){
+	    
+	}
+	// bills.reduce( (sequence, bill) => {
+	//     return sequence.then( () => {
+		
+	//     }).catch( (err) => {
+	// 	console.trace(err);
+	//     });
+	// }, Promise.resolve());
+    });
+};
