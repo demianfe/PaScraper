@@ -2,7 +2,7 @@
 
 import { crawlSessions, downloadRTFs, parseRTFandSave } from './scraper/votaciones-main';
 import { mapAllToVotaciones } from './scraper/votaciones-mapper';
-import { getBillsRelatedData, downloadBills } from './scraper/silpy-api-client.js';
+import { getCongressmenData, getBillsRelatedData, downloadBills } from './scraper/silpy-api-client.js';
 import { mapAllBills }  from './scraper/billit-mapper';
 
 //first argment is node path
@@ -17,6 +17,7 @@ let printHelp = () => {
     console.log("--download-rtfs \t downlad rtf files stored in the data base.");
     console.log("--parse-rtfs \t\t parses all dowonloaded rtfs and saves to monto db.");
     console.log("--map-votaciones \t maps diputados and voting results to votacionespa.");
+    console.log("--get-congressmen \t downloads congressmen data.");
     console.log("--download-bills \t\ Download all bills related to all congressmen \n \
 \t\t\t within this parlamentary period.");
     console.log("--download-bills-files \t\ Download files related to bills. \n\
@@ -42,6 +43,9 @@ case "--parse-rtfs":
     break;
 case "--map-votaciones":
     mapAllToVotaciones();
+    break;
+case "--get-congressmen":
+    getCongressmenData();
     break;
 case "--download-bills":
     getBillsRelatedData();

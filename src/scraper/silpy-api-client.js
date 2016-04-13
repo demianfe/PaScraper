@@ -74,7 +74,6 @@ let getAutores = (billId) => {
     });
 };
 
-
 //get bills by congressmen
 let getProyectosPorParlamentario = (parlamentarioId) => {
     options.uri = baseUri + 'parlamentario/'+ parlamentarioId +'/proyectos';
@@ -92,20 +91,25 @@ let updateCongressmen = () => {
     console.log('Total parlamentarios obtenidos: ' + parlamentarios.length);
     removeCollection('parlamentarios', {});
     saveObjects('parlamentarios', parlamentarios);
-    });    
+    });
 };
 
-let updateCongressmenBills = () => {
+export let getCongressmenData = () => {
     //TODO: clean collection in the db or save only new items
-    getCongressmenByPeriod('2013-2018').then( (parlamentarios) => {
-	return parlamentarios.reduce( (sequence, p) => {
-	    return sequence.then( () => {
-		return getProyectosPorParlamentario(p.idParlamentario);
-	    }).then( (data) => {
-		console.log(data.nombres, data.apellidos, data.proyectos.length);
-		saveObjects('parlamentario_proyectos', data);
-	    });
-	}, Promise.resolve());
+    getParlamentarios().then( (parlamentarios) => {	
+	removeCollection('parlamentarios', {});
+	saveObjects('parlamentarios', parlamentarios);
+    }).then( () => {
+	getCongressmenByPeriod('2013-2018').then( (parlamentarios) => {
+	    return parlamentarios.reduce( (sequence, p) => {
+		return sequence.then( () => {
+		    return getProyectosPorParlamentario(p.idParlamentario);
+		}).then( (data) => {
+		    console.log(data.nombres, data.apellidos, data.proyectos.length);
+		    saveObjects('parlamentario_proyectos', data);
+		});
+	    }, Promise.resolve());
+	});
     });
 };
 
