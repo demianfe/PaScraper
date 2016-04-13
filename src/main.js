@@ -3,7 +3,7 @@
 import { crawlSessions, downloadRTFs, parseRTFandSave } from './scraper/votaciones-main';
 import { mapAllToVotaciones } from './scraper/votaciones-mapper';
 import { getCongressmenData, getBillsRelatedData, downloadBills } from './scraper/silpy-api-client.js';
-import { mapAllBills }  from './scraper/billit-mapper';
+import { mapBillit } from './scraper/billit-mapper';
 
 //first argment is node path
 //seccond is directory where it is runing
@@ -54,8 +54,7 @@ case "--download-bills-files":
     downloadBills();
     break;
 case "--map-bills":
-    mapAllBills();
-    console.log("Uninemplented yet.");
+    mapBillit();
     break;
 default:
     printHelp();

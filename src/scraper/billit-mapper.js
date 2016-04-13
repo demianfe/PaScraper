@@ -138,7 +138,7 @@ let postProjects = (bill) =>{
     //print r.content
 };
 
-let mapBillit = () => {
+export let mapBillit = () =>{
     let offset = 50;
     let start = 0;
     let end = offset;
@@ -168,7 +168,7 @@ let mapBillit = () => {
 let updateBillIds = () => {
     getBills().then( (bills) => {
 	for(let bill of bills){
-	    
+	    //TODO:
 	}
 	// bills.reduce( (sequence, bill) => {
 	//     return sequence.then( () => {

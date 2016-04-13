@@ -116,21 +116,6 @@ export let getCongressmenData = () => {
 		getProyectosParlamentarios(result);
 	    });
 	});
-	// getCongressmenByPeriod('2013-2018').then( (parlamentarios) => {
-	//     return parlamentarios.reduce( (sequence, p) => {
-	// 	return sequence.then( () => {
-	// 	    return getProyectosPorParlamentario(p.idParlamentario);
-	// 	}).then( (data) => {
-	// 	    console.log(data.nombres, data.apellidos, data.proyectos.length);
-	// 	    saveObjects('parlamentario_proyectos', data);
-	// 	}).catch( (error) => {
-	// 	    //save failed request to try afterwards
-	// 	    console.log('Failed ', p.idParlamentario, p.nombres, p.apellidos);
-	// 	    p.failed = true;
-	// 	    saveObjects('parlamentario_proyectos', p);
-	// 	});
-	//     }, Promise.resolve());
-	// });
     });
 };
 
