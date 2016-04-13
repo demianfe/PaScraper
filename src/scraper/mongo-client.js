@@ -43,6 +43,33 @@ export let upsertObject = (collection, object) => {
     });
 };
 
+export let findObjects = (collection, query) => {
+    //too generic, use it with caution
+    //db.parlamentario_proyectos.find({failed: true})
+    return connectDb(url).then( (db) => {
+	console.log('Query:', collection, query);
+	let cursor = db.collection(collection)
+		.find(query);	
+	//return readCongressmen(db, cursor);
+	let result = [];
+	return new Promise( (resolve, reject) => {
+	    cursor.each( (err, doc) => {
+		if (err) throw err;
+		if (doc != null){
+		    result.push(doc);
+		}else{
+		    cursor.close();
+		    db.close();
+		    resolve(result);
+		}
+	    });
+	});
+    }).catch( (error) => {
+	console.trace(error);
+	throw error;
+    });     
+};
+
 export let insertToCollection = (collection, object) => {
     connectDb(url).then((db) =>{
 	db.collection(collection).insert(object, (err, inserted) => {

@@ -4,7 +4,7 @@ import request from 'request-promise';
 
 import { promisifiedExec, checkFileExistence, promisifiedWriteFs } from './utils';
 import { saveObjects, removeCollection, saveCongressmen, congressmenBills, upsertObject, getBills, 
-	 getCongressmanById, getCongressmenByPeriod, getUniqueBills } from './mongo-client';
+	 findObjects, getCongressmanById, getCongressmenByPeriod, getUniqueBills } from './mongo-client';
 import { parseBillHtml } from './silpy-htmlbill-parser';
 
 const baseUri = 'http://datos.congreso.gov.py/opendata/api/data/';
@@ -86,12 +86,20 @@ let getProyectosPorParlamentario = (parlamentarioId) => {
 	});
 };
 
-let updateCongressmen = () => {
-    getParlamentarios().then( (parlamentarios) => {
-    console.log('Total parlamentarios obtenidos: ' + parlamentarios.length);
-    removeCollection('parlamentarios', {});
-    saveObjects('parlamentarios', parlamentarios);
-    });
+let getProyectosParlamentarios = (parlamentarios) => {
+    return parlamentarios.reduce( (sequence, p) => {
+	return sequence.then( () => {
+	    return getProyectosPorParlamentario(p.idParlamentario);
+	}).then( (data) => {
+	    console.log(data.nombres, data.apellidos, data.proyectos.length);
+	    saveObjects('parlamentario_proyectos', data);
+	}).catch( (error) => {
+	    //save failed request to try afterwards
+	    console.log('Failed ', p.idParlamentario, p.nombres, p.apellidos);
+	    p.failed = true;
+	    saveObjects('parlamentario_proyectos', p);
+	});
+    }, Promise.resolve());
 };
 
 export let getCongressmenData = () => {
@@ -100,16 +108,29 @@ export let getCongressmenData = () => {
 	removeCollection('parlamentarios', {});
 	saveObjects('parlamentarios', parlamentarios);
     }).then( () => {
+	removeCollection('parlamentario_proyectos', {});
 	getCongressmenByPeriod('2013-2018').then( (parlamentarios) => {
-	    return parlamentarios.reduce( (sequence, p) => {
-		return sequence.then( () => {
-		    return getProyectosPorParlamentario(p.idParlamentario);
-		}).then( (data) => {
-		    console.log(data.nombres, data.apellidos, data.proyectos.length);
-		    saveObjects('parlamentario_proyectos', data);
-		});
-	    }, Promise.resolve());
+	    return getProyectosParlamentarios(parlamentarios);
+	}).then( () => {
+	    findObjects('parlamentario_proyectos', {failed: true}).then( (result) => {
+		getProyectosParlamentarios(result);
+	    });
 	});
+	// getCongressmenByPeriod('2013-2018').then( (parlamentarios) => {
+	//     return parlamentarios.reduce( (sequence, p) => {
+	// 	return sequence.then( () => {
+	// 	    return getProyectosPorParlamentario(p.idParlamentario);
+	// 	}).then( (data) => {
+	// 	    console.log(data.nombres, data.apellidos, data.proyectos.length);
+	// 	    saveObjects('parlamentario_proyectos', data);
+	// 	}).catch( (error) => {
+	// 	    //save failed request to try afterwards
+	// 	    console.log('Failed ', p.idParlamentario, p.nombres, p.apellidos);
+	// 	    p.failed = true;
+	// 	    saveObjects('parlamentario_proyectos', p);
+	// 	});
+	//     }, Promise.resolve());
+	// });
     });
 };
 
