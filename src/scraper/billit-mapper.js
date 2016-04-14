@@ -1,10 +1,9 @@
 'use strict';
 import request from 'request-promise';
-import { getBills, countUniqueBills, getUniqueBills } from './mongo-client'
+import { getBills, countUniqueBills, getUniqueBills } from './mongo-client';
 
-;
-//const host = 'http://localhost:8002';
-const host = 'http://parlamentoabierto.org.py:8002';
+const host = 'http://localhost:8002';
+//const host = 'http://parlamentoabierto.org.py:8002';
 const secret_token = '75cc973db60d3e07beaa1630c4cb37ded228e5bb71853be068a573b1a2ee385379111f9b12847b285a7e2c2b2f918b2902f4edb04046319cf41148a642fa53d3';
 
 
@@ -12,7 +11,7 @@ let headers = {"Content-Type": "application/json",
                "X-CSRF-Token": secret_token};
 
 let options  = {
-    method: 'GET',
+    method: 'POST',
     uri: host,
     headers: headers,
     json: true
@@ -26,8 +25,8 @@ let getChamber = (chamber) => {
 
 let createBillObject = (p) => {
     let bill = {};
-    bill.silpy_id = p.idProyecto;
-    //bill.uuid = p.idProyecto;
+    bill.folder = p.expedienteCamara;
+    bill.uid = p.idProyecto;
     if ('acapite' in p){
 	bill.title = p['acapite'];
     }if ('fechaIngresoExpediente' in p){
@@ -55,7 +54,7 @@ let createBillObject = (p) => {
 	}
     }
     //tramitaciones 
-    bill.tramitaciones = [];    
+    bill.paperworks = [];    
     if ('tramitaciones' in p){
 	for (let tramitacion of p.tramitaciones.tramite){
 	    let new_tramitacion = {};
@@ -64,7 +63,7 @@ let createBillObject = (p) => {
 	    new_tramitacion.chamber = getChamber(tramitacion.camaraTramite);
 	    new_tramitacion.stage = tramitacion.descripcionEtapa;
 	    new_tramitacion.timeline_status = tramitacion.resultadoTramite;      
-	    bill.tramitaciones.push(new_tramitacion);
+	    bill.paperworks.push(new_tramitacion);
 	}
     }
     //TODO: documents
@@ -76,27 +75,27 @@ let createBillObject = (p) => {
         // document.step = doc['']#, :type => String
         // document.stage = doc['']#, :type => String
         // document.chamber = doc['']#, :type => String
-        document.link = p.file;//#, :type => String
+	document.link = p.file;//#, :type => String
 	bill.documents.push(document);
+
     }
     
-    // //TODO: Directives
-    // bill.directives = [];
-    // if ('directives' in p){
-    //     if (p['directives']){
-    //         for (let d of p['directives']){
-    //             let directive = {};
-    //             if ('date' in d){
-    //                 directive.date = d['date'];//#, :type => DateTime
-    //             }if ('result' in d){
-    //                 directive.step = d['result'];// #, :type => String
-    //                 //directive.stage #, :type => String ?
-    //                 //directive.link #, :type => String ?
-    // 		}	 
-    //             bill.directives.append(directive.__dict__);
-    // 	    }
-    // 	}
-    // }
+    //TODO: Directives
+    bill.directives = [];
+    if ('dictamenes' in p){
+        for (let d of p.dictamenes.dictamen){
+            let directive = {};
+	    console.log(d);
+            if ('fechaDictamen' in d){
+                directive.date = d.fechaDictamen;//#, :type => DateTime
+            }if ('sentidoDictamen' in d){
+                directive.step = d.sentidoDictamen;// :type => String
+                directive.stage = d.descripcionEtapa;//, :type => String ?
+                //directive.link #, :type => String ?
+    	    }	 
+            bill.directives.push(directive);
+    	}
+    }
     return bill;
 };
 
@@ -126,39 +125,27 @@ let postProjects = (bill) =>{
     let billitObj = createBillObject(bill);
     options.uri = host + '/bills';
     options.body = billitObj;
+    console.log('################################');
+    console.log(JSON.stringify(billitObj));
+    console.log('################################');
     return request(options).then( (response) => {
 	console.log('Creado exitosamente ');
 	//console.log(response);
     }).catch( (error ) =>{
-	console.log('Error !');
 	console.trace(error);
+	
     });
-    //r = requests.post(host + '/bills', data=json.dumps(bill.__dict__))
-    //print "------------------------------------------------------------------------------  "
-    //print r.content
 };
 
 export let mapBillit = () =>{
-    let offset = 50;
-    let start = 0;
-    let end = offset;
-    countUniqueBills().then( (total) => {
-	console.log('total', total);
-	console.log('about to call getBills');
-	let count = 0;
-	getBills().then( (bills) => {
-	    bills.reduce( (sequence, bill) => {
-		return sequence.then( () => {
-		    console.log("-------------------------");
-		    count +=1;
-		    console.log('count', count);
-		    console.log("-------------------------");
-		    return postProjects(bill);
-		}).catch( (err) => {
-		    console.trace(err);
-		});
-	    }, Promise.resolve());
-	});
+    getBills().then( (bills) => {
+	bills.reduce( (sequence, bill) => {
+	    return sequence.then( () => {
+		return postProjects(bill);
+	    }).catch( (err) => {
+		console.trace(err);
+	    });
+	}, Promise.resolve());
     });
 };
 
@@ -166,7 +153,7 @@ export let mapBillit = () =>{
 //bill-it uid with the id used in silpy
 //expedienteCamara is currently used as uid
 let updateBillIds = () => {
-    getBills().then( (bills) => {
+    getBills(10, 2).then( (bills) => {
 	for(let bill of bills){
 	    //TODO:
 	}
