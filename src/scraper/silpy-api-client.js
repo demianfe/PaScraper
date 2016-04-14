@@ -172,7 +172,7 @@ export let getBillsRelatedData = () => {
 let downloadBillFile = (link) => {
     return new Promise( (resolve, reject) => {
 	console.log('Downloading: ', link.link);
-	let outFile = fileBaseDir  + 'documents/' + link.name;
+	let outFile = fileBaseDir + link.name;
 	//file does not exists, so we create it
 	//return promisifiedExec('curl ' + link.link + ' -o ' + output)
 	if(!fs.existsSync (outFile)){
@@ -205,11 +205,12 @@ export let downloadBills = () => {
 		return request(bill.appURL).then( (content) => {
 		    //download file
 		    //parseBillHtml(content)[0]; -> ignora antecedentes
-		    let link = parseBillHtml(content)[0];
+		    let link = parseBillHtml(content)[0];		    
 		    let base = link.link.split(';')[0];
 		    link.link = base + link.link.substring(link.link.indexOf('?'));
 		    return downloadBillFile(link).then( (file) => {
-			bill.file = file;
+			link.file = file;
+			bill.file = link;
 			upsertObject('bills', bill);
 		    });
 		}).catch( (error) => {

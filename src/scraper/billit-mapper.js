@@ -70,14 +70,13 @@ let createBillObject = (p) => {
     bill.documents = [];
     if ('file' in p){
         document = {};
-        //document.type = doc['type']; // :type => String
+        document.type = p.file.type; // :type => String
         // document.number#, :type => String
         // document.step = doc['']#, :type => String
         // document.stage = doc['']#, :type => String
         // document.chamber = doc['']#, :type => String
-	document.link = p.file;//#, :type => String
+	document.link = p.file.file;//#, :type => String
 	bill.documents.push(document);
-
     }
     
     //TODO: Directives
@@ -85,14 +84,13 @@ let createBillObject = (p) => {
     if ('dictamenes' in p){
         for (let d of p.dictamenes.dictamen){
             let directive = {};
-	    console.log(d);
             if ('fechaDictamen' in d){
                 directive.date = d.fechaDictamen;//#, :type => DateTime
             }if ('sentidoDictamen' in d){
                 directive.step = d.sentidoDictamen;// :type => String
                 directive.stage = d.descripcionEtapa;//, :type => String ?
                 //directive.link #, :type => String ?
-    	    }	 
+    	    }
             bill.directives.push(directive);
     	}
     }
@@ -125,9 +123,6 @@ let postProjects = (bill) =>{
     let billitObj = createBillObject(bill);
     options.uri = host + '/bills';
     options.body = billitObj;
-    console.log('################################');
-    console.log(JSON.stringify(billitObj));
-    console.log('################################');
     return request(options).then( (response) => {
 	console.log('Creado exitosamente ');
 	//console.log(response);
@@ -146,23 +141,5 @@ export let mapBillit = () =>{
 		console.trace(err);
 	    });
 	}, Promise.resolve());
-    });
-};
-
-//helper function to change
-//bill-it uid with the id used in silpy
-//expedienteCamara is currently used as uid
-let updateBillIds = () => {
-    getBills(10, 2).then( (bills) => {
-	for(let bill of bills){
-	    //TODO:
-	}
-	// bills.reduce( (sequence, bill) => {
-	//     return sequence.then( () => {
-		
-	//     }).catch( (err) => {
-	// 	console.trace(err);
-	//     });
-	// }, Promise.resolve());
     });
 };
