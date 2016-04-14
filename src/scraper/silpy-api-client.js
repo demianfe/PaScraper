@@ -8,7 +8,7 @@ import { saveObjects, removeCollection, saveCongressmen, congressmenBills, upser
 import { parseBillHtml } from './silpy-htmlbill-parser';
 
 const baseUri = 'http://datos.congreso.gov.py/opendata/api/data/';
-const fileBaseDir = '/tmp/parlamentoabierto/bills/'; //__dirname + '/../../bills/';
+const fileBaseDir = '/tmp/parlamentoabierto/bills/';
 //dirname = 'download/bills/%s/documents' %(project_id)
 
 let options  = {
@@ -218,7 +218,8 @@ export let downloadBills = (newFiles) => {
 			upsertObject('bills', bill);
 		    });
 		}).catch( (error) => {
-		    console.log(error);
+		    saveObjects('bill_download_failed', bill);
+		    console.log('Download failed for bill', bill.idProyecto);
 		});
 	    }).catch( (error) => {
 		console.log(error);
