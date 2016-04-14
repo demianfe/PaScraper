@@ -51,7 +51,12 @@ case "--download-bills":
     getBillsRelatedData();
     break;
 case "--download-bills-files":
-    downloadBills();
+    if(args[0] == 'new'){
+	downloadBills(true);
+    }else{
+	downloadBills();
+    }
+    
     break;
 case "--map-bills":
     mapBillit();

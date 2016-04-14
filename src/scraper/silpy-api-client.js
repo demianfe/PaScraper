@@ -194,10 +194,14 @@ let downloadBillFile = (link) => {
     });
 };
 
-//download all bills
-export let downloadBills = () => {
+//download files related to bills
+export let downloadBills = (newFiles) => {
     console.log('Will download bills files.');
-    getBills().then( (bills) => {
+    let query;
+    if (newFiles == true){
+	query = {file: {$exists: false} };
+    }
+    findObjects('bills', query).then( (bills) => {
 	console.log(bills.length);
 	bills.reduce( (sequence, bill) => {
 	    return sequence.then( () => {
@@ -205,7 +209,7 @@ export let downloadBills = () => {
 		return request(bill.appURL).then( (content) => {
 		    //download file
 		    //parseBillHtml(content)[0]; -> ignora antecedentes
-		    let link = parseBillHtml(content)[0];		    
+		    let link = parseBillHtml(content)[0];
 		    let base = link.link.split(';')[0];
 		    link.link = base + link.link.substring(link.link.indexOf('?'));
 		    return downloadBillFile(link).then( (file) => {

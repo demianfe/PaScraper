@@ -43,14 +43,18 @@ export let upsertObject = (collection, object) => {
     });
 };
 
-export let findObjects = (collection, query) => {
+export let findObjects = (collection, filter) => {
     //too generic, use it with caution
-    //db.parlamentario_proyectos.find({failed: true})
     return connectDb(url).then( (db) => {
-	console.log('Query:', collection, query);
-	let cursor = db.collection(collection)
-		.find(query);	
-	//return readCongressmen(db, cursor);
+	console.log(query);
+	console.log('Query:', collection, filter);
+	let cursor;
+	let query = db.collection(collection);
+	if(query !== undefined){
+	    cursor = query.find(filter);
+	}else{
+	    cursor = query.find();
+	}
 	let result = [];
 	return new Promise( (resolve, reject) => {
 	    cursor.each( (err, doc) => {
