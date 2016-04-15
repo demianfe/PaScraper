@@ -2,6 +2,7 @@
 import fs from 'fs';
 import util from 'util';
 import exec from 'child_process';
+import mkdirp from 'mkdirp';
 
 //trims spaces from a string
 export let trimString = (string) => {
@@ -55,3 +56,16 @@ export let checkFileExistence = (fileName) => {
     });
 };
 
+export let createDirectory = (dirName) => {
+    if (!fs.existsSync(dirName)){
+	mkdirp((dirName), (error) => {
+	    if (error){
+		console.error(error);
+		throw error;
+	    }else {
+		console.log('Created dir:', dirName);
+	    }
+	});
+    }
+	
+};

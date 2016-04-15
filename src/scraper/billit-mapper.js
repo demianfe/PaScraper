@@ -6,7 +6,6 @@ const host = 'http://localhost:8002';
 //const host = 'http://parlamentoabierto.org.py:8002';
 const secret_token = '75cc973db60d3e07beaa1630c4cb37ded228e5bb71853be068a573b1a2ee385379111f9b12847b285a7e2c2b2f918b2902f4edb04046319cf41148a642fa53d3';
 
-
 let headers = {"Content-Type": "application/json",
                "X-CSRF-Token": secret_token};
 
@@ -25,8 +24,8 @@ let getChamber = (chamber) => {
 
 let createBillObject = (p) => {
     let bill = {};
-    bill.folder = p.expedienteCamara;
-    bill.uid = p.idProyecto;
+    //bill.folder = p.expedienteCamara;
+    bill.uid = p.expedienteCamara;
     if ('acapite' in p){
 	bill.title = p['acapite'];
     }if ('fechaIngresoExpediente' in p){
@@ -69,7 +68,7 @@ let createBillObject = (p) => {
     //TODO: documents
     bill.documents = [];
     if ('file' in p){
-        document = {};
+        let document = {};
         document.type = p.file.type; // :type => String
         // document.number#, :type => String
         // document.step = doc['']#, :type => String

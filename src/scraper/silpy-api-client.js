@@ -1,15 +1,13 @@
 import fs from 'fs';
-import mkdirp from 'mkdirp';
 import request from 'request-promise';
 
-import { promisifiedExec, checkFileExistence, promisifiedWriteFs } from './utils';
+import { promisifiedExec, checkFileExistence, promisifiedWriteFs, createDirectory } from './utils';
 import { saveObjects, removeCollection, saveCongressmen, congressmenBills, upsertObject, getBills, 
 	 findObjects, getCongressmanById, getCongressmenByPeriod, getUniqueBills } from './mongo-client';
 import { parseBillHtml } from './silpy-htmlbill-parser';
+import { downloadDir } from './config';
 
 const baseUri = 'http://datos.congreso.gov.py/opendata/api/data/';
-const fileBaseDir = '/tmp/parlamentoabierto/';
-//dirname = 'download/bills/%s/documents' %(project_id)
 
 let options  = {
     method: 'GET',
@@ -172,18 +170,9 @@ export let getBillsRelatedData = () => {
 let downloadBillFile = (link, folder) => {
     return new Promise( (resolve, reject) => {
 	console.log('Downloading: ', link.link);
-	//let outFile = fileBaseDir + link.name;
-	let outFile = fileBaseDir + 'download/bills/' + folder + '/documents/';
-	if (!fs.existsSync(outFile)){
-	    //fs.mkdirSync(outFile);
-	    mkdirp((outFile), (error) => {
-		if (error){
-		    console.log('EROR')
-		    ;console.error(err);		
-		}else console.log('gr8!');
-	    });
-	}	
-	//file does not exists, so we create it
+	let outFile = downloadDir + 'download/bills/' + folder + '/documents/';
+	//WARNING: unhandled exception
+	createDirectory(outFile);
 	if(!fs.existsSync (outFile)){
 	    //TODO: add max buffer size to invocation
 	    let maxBufferSize = link.size + link.size*0.30; //30% greater just in case
@@ -230,7 +219,6 @@ export let downloadBills = (newFiles) => {
 		}).catch( (error) => {
 		    saveObjects('bill_download_failed', bill);
 		    console.log('Download failed for bill', bill.idProyecto);
-		    console.log(error);
 		});
 	    }).catch( (error) => {
 		console.log(error);

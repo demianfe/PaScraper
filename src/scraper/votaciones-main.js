@@ -8,9 +8,10 @@ import fs from 'fs';
 
 import { parseSession } from './session-parser';
 import { votingHTMLParser } from './rtf-parser';
-import { trimString, promisifiedReadFs, promisifiedExec } from './utils';
+import { trimString, promisifiedReadFs, promisifiedExec, createDirectory } from './utils';
 import { getDownloadedRTF, saveObjects, getSessionById,
 	 upsertObject, saveSession, getRTFLinks } from './mongo-client';
+import { downloadDir } from './config';
 
 const host = 'http://www.diputados.gov.py';
 const baseUrl = host + '/ww1/?pagina=sesiondigital';
@@ -29,13 +30,9 @@ let parseSessionList = (htmlString) => {
     return links;
 };
 
-//example 'http://www.diputados.gov.py/plenaria/151216-SO/'
-//TODO:
-// Navigation section
 let options = {
     method: 'POST',
     uri: baseUrl
-    //form: {anho: '2013'}
 };
 
 export let crawlSessions = (queryObj) => {
@@ -82,13 +79,15 @@ let downloadRTF = (link) => {
 //with data related to the session
 export let downloadRTFs = () => {
     let arr;
+    let outDir = downloadDir + 'rtf/';
+    createDirectory(outDir);
     getRTFLinks().then( (links) => {
 	links.reduce( (sequence, link) => {
 	    return sequence.then( () =>{
 		let url  = host + '/plenaria/'+ link.link;
 		arr  = url.split('/');
 		let fileName = arr[arr.length - 1];
-		fileName = __dirname + '/../../rtf/' + fileName;
+		fileName = outDir + fileName;
 		link.url = url;
 		link.fileName = fileName;
 		if(link.url.indexOf('.mp3') == -1){
