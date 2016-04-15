@@ -1,5 +1,5 @@
-
 import fs from 'fs';
+import mkdirp from 'mkdirp';
 import request from 'request-promise';
 
 import { promisifiedExec, checkFileExistence, promisifiedWriteFs } from './utils';
@@ -8,7 +8,7 @@ import { saveObjects, removeCollection, saveCongressmen, congressmenBills, upser
 import { parseBillHtml } from './silpy-htmlbill-parser';
 
 const baseUri = 'http://datos.congreso.gov.py/opendata/api/data/';
-const fileBaseDir = '/tmp/parlamentoabierto/bills/';
+const fileBaseDir = '/tmp/parlamentoabierto/';
 //dirname = 'download/bills/%s/documents' %(project_id)
 
 let options  = {
@@ -169,16 +169,25 @@ export let getBillsRelatedData = () => {
     });
 };
 
-let downloadBillFile = (link) => {
+let downloadBillFile = (link, folder) => {
     return new Promise( (resolve, reject) => {
 	console.log('Downloading: ', link.link);
-	let outFile = fileBaseDir + link.name;
+	//let outFile = fileBaseDir + link.name;
+	let outFile = fileBaseDir + 'download/bills/' + folder + '/documents/';
+	if (!fs.existsSync(outFile)){
+	    //fs.mkdirSync(outFile);
+	    mkdirp((outFile), (error) => {
+		if (error){
+		    console.log('EROR')
+		    ;console.error(err);		
+		}else console.log('gr8!');
+	    });
+	}	
 	//file does not exists, so we create it
-	//return promisifiedExec('curl ' + link.link + ' -o ' + output)
 	if(!fs.existsSync (outFile)){
 	    //TODO: add max buffer size to invocation
 	    let maxBufferSize = link.size + link.size*0.30; //30% greater just in case
-	    let command = 'curl -o' + outFile + ' ' + link.link;
+	    let command = 'curl -o ' + outFile + link.name + ' ' + link.link;
 	    promisifiedExec(command, {maxBuffer: maxBufferSize})
 		.then( (output) =>{
 		    console.log('File saved to: ', outFile);
@@ -201,6 +210,7 @@ export let downloadBills = (newFiles) => {
     if (newFiles == true){
 	query = {file: {$exists: false} };
     }
+    removeCollection('bill_download_failed');
     findObjects('bills', query).then( (bills) => {
 	console.log(bills.length);
 	bills.reduce( (sequence, bill) => {
@@ -212,7 +222,7 @@ export let downloadBills = (newFiles) => {
 		    let link = parseBillHtml(content)[0];
 		    let base = link.link.split(';')[0];
 		    link.link = base + link.link.substring(link.link.indexOf('?'));
-		    return downloadBillFile(link).then( (file) => {
+		    return downloadBillFile(link, bill.expedienteCamara).then( (file) => {
 			link.file = file;
 			bill.file = link;
 			upsertObject('bills', bill);
@@ -220,6 +230,7 @@ export let downloadBills = (newFiles) => {
 		}).catch( (error) => {
 		    saveObjects('bill_download_failed', bill);
 		    console.log('Download failed for bill', bill.idProyecto);
+		    console.log(error);
 		});
 	    }).catch( (error) => {
 		console.log(error);
