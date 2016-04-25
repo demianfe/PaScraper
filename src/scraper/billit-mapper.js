@@ -74,7 +74,7 @@ let createBillObject = (p) => {
         // document.step = doc['']#, :type => String
         // document.stage = doc['']#, :type => String
         // document.chamber = doc['']#, :type => String
-	document.link = p.file.file;//#, :type => String
+	document.link = p.file.name;//#, :type => String
 	bill.documents.push(document);
     }
     

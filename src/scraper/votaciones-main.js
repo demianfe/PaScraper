@@ -133,7 +133,7 @@ let saveVoting = (rtfData, session) =>{
     }
 };
 
-let parseRTF = () => {    
+export let parseRTFs = () => {    
     getDownloadedRTF().then( (rtfList) =>{
 	for(let rtf of rtfList){
 	    promisifiedExec(util.format('unrtf --html %s', rtf.fileName))

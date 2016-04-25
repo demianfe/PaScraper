@@ -34,6 +34,7 @@ let addValuesToList = (obj, objList, values) => {
     return obj;
 };
 
+//TODO: if nothing found slide one columnt to the right
 export let votingHTMLParser = (data) => {
     /* parses the html result of the conversion rtf -> html */
     data = iconv.decode(data, 'utf8');    
