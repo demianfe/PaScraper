@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { crawlSessions, downloadRTFs, parseRTFandSave } from './scraper/votaciones-main';
+import { crawlSessions, downloadRTFs, parseRTFs } from './scraper/votaciones-main';
 import { mapAllToVotaciones } from './scraper/votaciones-mapper';
 import { getCongressmenData, getBillsRelatedData, downloadBills } from './scraper/silpy-api-client.js';
 import { mapBillit } from './scraper/billit-mapper';
@@ -39,7 +39,7 @@ case "--download-rtfs":
     downloadRTFs();
     break;
 case "--parse-rtfs":
-    parseRTFandSave();
+    parseRTFs();
     break;
 case "--map-votaciones":
     mapAllToVotaciones();
