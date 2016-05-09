@@ -391,18 +391,28 @@ export let congressmenBills = () => {
     });
 };
 
-export let getBills = (skip, limit) => {
+export let getBills = (skip, limit, queryParams) => {
     //this function brings all bills from bills collection
     return new Promise( (resolve, reject) =>{
 	let cursor;
 	connectDb(url).then( (db) => {
-	    if(skip !== undefined && limit !== undefined){
-		cursor = db.collection('bills')
-		    .find().skip(skip).limit(limit);
+	    console.log("queryParams", queryParams);
+	    let query = db.collection('bills');
+	    if(queryParams != undefined){
+		console.log(queryParams);
+		cursor = query.find(queryParams);
 	    }else{
-		cursor = db.collection('bills').find();
+		cursor = query.find();
 	    }
+	    
+	    if(skip !== undefined){
+		cursor = cursor.skip(skip);
+	    }if(limit !== undefined){
+		cursor = cursor.limit(limit);
+	    }
+
 	    let result = [];
+	    
 	    cursor.each( (error, item) => {
 		if (error != null) reject(error);
 		if (item != null){
@@ -417,4 +427,27 @@ export let getBills = (skip, limit) => {
     });
 };
 
-;
+// export let queryBills = () => {
+//     //TODO: paging?
+//     let cursor;
+// 	connectDb(url).then( (db) => {
+// 	    if(skip !== undefined && limit !== undefined){
+// 		cursor = db.collection('bills')
+// 		    .find().skip(skip).limit(limit);
+// 	    }else{
+// 		cursor = db.collection('bills').find();
+// 	    }
+// 	    let result = [];
+// 	    cursor.each( (error, item) => {
+// 		if (error != null) reject(error);
+// 		if (item != null){
+// 		    result.push(item);
+// 		}else{
+// 		    cursor.close();
+// 		    db.close();
+// 		    resolve(result);
+// 		}
+// 	    });
+// 	});
+//     });
+// };

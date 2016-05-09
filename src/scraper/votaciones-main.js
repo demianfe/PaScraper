@@ -8,7 +8,8 @@ import fs from 'fs';
 
 import { parseSession } from './session-parser';
 import { votingHTMLParser } from './rtf-parser';
-import { trimString, promisifiedReadFs, promisifiedExec, createDirectory } from './utils';
+import { checkFileExistence, trimString, promisifiedReadFs,
+	 promisifiedExec, createDirectory } from './utils';
 import { getDownloadedRTF, saveObjects, getSessionById,
 	 upsertObject, saveSession, getRTFLinks } from './mongo-client';
 import { downloadDir } from './config';
@@ -66,12 +67,17 @@ export let crawlSessions = (queryObj) => {
 let downloadRTF = (link) => {
     return new Promise( (resolve, reject) => {
 	console.log('downloading \n', link.url);
-	promisifiedExec('curl ' + link.url + ' -o ' + link.fileName)
-	    .then( (stdout) => {
-		resolve(link);
-	    }).catch( (error) => {
-		console.log(error);
-	    });
+	if(!fs.existsSync (link.fileName)){
+	    promisifiedExec('curl ' + link.url + ' -o ' + link.fileName)
+		.then( (stdout) => {
+		    resolve(link);
+		}).catch( (error) => {
+		    console.log(error);
+		});
+	}else{
+	    console.log('File', link.fileName, 'already exists.');
+	    resolve(link);
+	}
     });
 };
 
@@ -115,13 +121,11 @@ let saveVoting = (rtfData, session) =>{
 	    let votingIndex = 0;
 	    while(votingIndex < sd.votings.length){
 		let v = sd.votings[votingIndex];
-		//for(let v of sd.votings){
 		if(rtfData.link.search(v.link) !== -1){
 		    rtfData.year = session.year;
 		    rtfData.result = v.title;
 		    rtfData.president = session.PRESIDENTE
 			.replace(": Diputado Nacional ","");
-		    console.log(rtfData._id);
 		    saveObjects('votings', rtfData);
 		    detailsIndex = session.details.length;//breaks while
 		    break;
@@ -134,24 +138,27 @@ let saveVoting = (rtfData, session) =>{
 };
 
 export let parseRTFs = () => {    
-    getDownloadedRTF().then( (rtfList) =>{
-	for(let rtf of rtfList){
-	    promisifiedExec(util.format('unrtf --html %s', rtf.fileName))
-		.then( (html) => {	    
-		    console.log('Parsing ', rtf.fileName);
-		    let data = votingHTMLParser(html);
-		    for (let k in data){
-		    	rtf[k] = data[k];
-		    }
-		    return rtf;
-		}).then( (rtfData) => {
-		    getSessionById(rtfData.session_id).then( (session) => {
-			//iterate over session.votings and merge with rtfData
-			saveVoting(rtfData, session);
-		    });
-		}).catch( (error) => {
-		    console.log(error);
-		});
-	}
-    });    
+    getDownloadedRTF().then( (rtfList) => {
+	rtfList.reduce( (sequence, rtf) => {
+	    return sequence.then( () => {
+		return promisifiedExec(util.format('unrtf --html %s', rtf.fileName))
+		    .then( (html) => {
+			console.log('Parsing ', rtf.fileName);
+			let data = votingHTMLParser(html);
+			for (let k in data) {
+			    rtf[k] = data[k];
+			    
+			}
+			return getSessionById(rtf.session_id).then( (session) => {			 
+			    console.log("getting the session and saving", session.id);
+			    //iterate over session.votings and merge with rtfData
+			    //save rtfs that where not parsed
+			    saveVoting(rtf, session);
+			});
+		    }).catch( (error) => {
+			console.log(error);
+		    });	
+	    });
+	}, Promise.resolve());
+    });
 };

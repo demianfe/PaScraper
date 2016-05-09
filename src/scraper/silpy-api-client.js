@@ -1,7 +1,7 @@
 import fs from 'fs';
 import request from 'request-promise';
 
-import { promisifiedExec, checkFileExistence, promisifiedWriteFs, createDirectory } from './utils';
+import { promisifiedExec, promisifiedWriteFs, createDirectory } from './utils';
 import { saveObjects, removeCollection, saveCongressmen, congressmenBills, upsertObject, getBills, 
 	 findObjects, getCongressmanById, getCongressmenByPeriod, getUniqueBills } from './mongo-client';
 import { parseBillHtml } from './silpy-htmlbill-parser';
@@ -102,6 +102,7 @@ let getProyectosParlamentarios = (parlamentarios) => {
 
 export let getCongressmenData = () => {
     //TODO: clean collection in the db or save only new items
+    //TODO: traer comisiones del parlamentario
     getParlamentarios().then( (parlamentarios) => {	
 	removeCollection('parlamentarios', {});
 	saveObjects('parlamentarios', parlamentarios);
@@ -119,6 +120,7 @@ export let getCongressmenData = () => {
 
 let getProyecto = (billId) => {
     options.uri = baseUri + 'proyecto/'+ billId;
+    return new Promise( (resolve, reject) => { 
 	return request(options)
 	    .then((bill) => {
 		return bill;
@@ -131,14 +133,37 @@ let getProyecto = (billId) => {
 		    }).then( (obj1) => {
 			getDictamenes(billId).then( (dictamenes) => {
 			    obj1 = Object.assign({}, obj1, dictamenes);
-			    saveObjects('bills', obj1);
+			    resolve(obj1);
 			});
 		    });
 		});
 	    }).catch( (err) => {
 		console.log('....failed');
 		console.trace(err);
+		reject(err);
 	    });
+    });
+};
+		      
+export let updateBills = () => {
+    //get all that are with estado
+    //db.bills.find({"estadoProyecto" : "EN TRAMITE"})
+    //update database
+    getBills(undefined, undefined, {"estadoProyecto" : "EN TRAMITE"}).then( (bills) => {
+	bills.reduce( (sequence, bill) => {
+	    return sequence.then( () => {
+		getProyecto(bill.idProyecto).then( (obj) => {
+		    let updatedBill = Object.assign({},bill,obj);
+		    console.log('Updating bill', bill.idProyecto);
+		    upsertObject('bills', bill);
+		});
+	    }).catch( (error) => {
+		console.trace(error);
+	    });
+	}, Promise.resolve());
+    }).catch( (error)=> {
+	console.trace(error);
+    });
 };
 
 export let getBillsRelatedData = () => {
@@ -147,11 +172,13 @@ export let getBillsRelatedData = () => {
 	    console.log('All bills removed...');
 	    return bills;
 	}).then( (bills) => {
+	console.log(bills.length);
 	    bills.reduce( (sequence, bill) => {
 		return sequence.then( () => {
-		    //download files
-		    return getProyecto(bill.idProyecto).then( () => {
-			console.log('Proyecto ', bill.idProyecto, ' descargado correctamente.');
+		    return getProyecto(bill.idProyecto).then( (bill) => {
+			console.log('Proyecto ', bill.idProyecto,
+				    'descargado correctamente.');
+			saveObjects('bills', bill);
 		    }).catch( (error) => {
 			console.log(error);
 		    });
@@ -163,7 +190,7 @@ export let getBillsRelatedData = () => {
 	    console.log(error);
 	});
     }).catch( (error) => {
-	console.log(error);
+    	console.log(error);
     });
 };
 
@@ -174,7 +201,6 @@ let downloadBillFile = (link, folder) => {
 	//WARNING: unhandled exception
 	createDirectory(outFile);
 	if(!fs.existsSync (outFile)){
-	    //TODO: add max buffer size to invocation
 	    let maxBufferSize = link.size + link.size*0.30; //30% greater just in case
 	    let command = 'curl -o ' + outFile + link.name + ' ' + link.link;
 	    promisifiedExec(command, {maxBuffer: maxBufferSize})

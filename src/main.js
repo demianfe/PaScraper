@@ -2,10 +2,11 @@
 
 import { crawlSessions, downloadRTFs, parseRTFs } from './scraper/votaciones-main';
 import { mapAllToVotaciones } from './scraper/votaciones-mapper';
-import { getCongressmenData, getBillsRelatedData, downloadBills } from './scraper/silpy-api-client.js';
+import { getCongressmenData, getBillsRelatedData,
+	 downloadBills, updateBills } from './scraper/silpy-api-client.js';
 import { mapBillit } from './scraper/billit-mapper';
 
-//first argment is node path
+//first argument is node path
 //seccond is directory where it is runing
 //and then the rest
 let command = process.argv[2];//process.argv.slice(2, process.argv.length);
@@ -23,6 +24,7 @@ let printHelp = () => {
     console.log("--download-bills-files \t\ Download files related to bills. \n\
 \t\t\t --download-bills should be executed before.");
     console.log("--map-bills \t\t maps all bills to bill-it.");
+    console.log("--update-bills \t\t updates bills with status \"EN TRAMITE\"");
 };
 switch (command){
 case "--help":
@@ -55,11 +57,13 @@ case "--download-bills-files":
 	downloadBills(true);
     }else{
 	downloadBills();
-    }
-    
+    }    
     break;
 case "--map-bills":
     mapBillit();
+    break;
+case "--update-bills":
+    updateBills();
     break;
 default:
     printHelp();

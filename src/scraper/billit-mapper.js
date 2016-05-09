@@ -96,7 +96,7 @@ let createBillObject = (p) => {
     return bill;
 };
 
-let  updateOrCreate = () => {
+let updateOrCreate = () => {
     //get all projects from "updated_bills" collection
     //verify if the collection exists already
     //if does not make post request
@@ -115,6 +115,7 @@ let  updateOrCreate = () => {
     //     elif r.status_code == 404:
     //         print "Creating new Bill %s" %(bill_id)
     //         r = requests.post(host + '/bills', data=json.dumps(bill.__dict__))
+
 };
 
 let postProjects = (bill) =>{    
@@ -127,7 +128,6 @@ let postProjects = (bill) =>{
 	//console.log(response);
     }).catch( (error ) =>{
 	console.trace(error);
-	
     });
 };
 
