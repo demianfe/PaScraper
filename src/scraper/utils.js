@@ -46,7 +46,7 @@ export let promisifiedExec = (command, options=undefined) => {
 };
 
 export let checkFileExistence = (fileName) => {
-    //returns true if it does not exists
+    //returns true if it exists
     //rejects if it does not.
     return new Promise( (resolve, reject) => {
 	fs.access(fileName, fs.F_OK,  (err) => {

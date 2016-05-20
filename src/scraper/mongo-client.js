@@ -16,6 +16,9 @@ export let connectDb = (dburl) => {
     });
 };
 
+/*  generic bulk mongo operations 
+ *  use them with caution.
+*/
 export let saveObjects = (collection, objects) => {
     connectDb(url).then((db) =>{
 	    db.collection(collection).insert(objects, (err, inserted) => {   
@@ -46,8 +49,6 @@ export let upsertObject = (collection, object) => {
 export let findObjects = (collection, filter) => {
     //too generic, use it with caution
     return connectDb(url).then( (db) => {
-	console.log(query);
-	console.log('Query:', collection, filter);
 	let cursor;
 	let query = db.collection(collection);
 	if(query !== undefined){
@@ -71,8 +72,22 @@ export let findObjects = (collection, filter) => {
     }).catch( (error) => {
 	console.trace(error);
 	throw error;
-    });     
+    });
 };
+
+export let removeCollection = (collection, query) => {
+    if(query == null || query == undefined){
+	query = {};//remove all
+    }
+
+    return connectDb(url).then( (db) => {
+	console.log('Removing collection ', collection);
+	db.collection(collection).remove(query);
+	db.close();
+    });
+};
+
+/* End generic bulk mongo */
 
 export let insertToCollection = (collection, object) => {
     connectDb(url).then((db) =>{
@@ -109,14 +124,14 @@ export let saveCongressmen = (congressmen) => {
 };
 
 let readCongressmen = (db, cursor) =>{
-    return new Promise( (resolv, reject) => {
+    return new Promise( (resolve, reject) => {
 	let congressmen = [];
 	cursor.each( (err, doc) => {
 	    if (err) throw err;
 	    if (doc != null){
 		congressmen.push(doc);
 	    }else{
-		resolv(congressmen);
+		resolve(congressmen);
 		cursor.close();
 		db.close();
 	    }
@@ -147,18 +162,6 @@ export let getCongressmanById = (id) => {
 		    return result;
 		});
 	return p;
-    });
-};
-
-export let removeCollection = (collection, query) => {
-    if(query == null || query == undefined){
-	query = {};//remove all
-    }
-
-    return connectDb(url).then( (db) => {
-	console.log('Removing collection ', collection);
-	db.collection(collection).remove(query);
-	db.close();
     });
 };
 
@@ -426,28 +429,3 @@ export let getBills = (skip, limit, queryParams) => {
 	});
     });
 };
-
-// export let queryBills = () => {
-//     //TODO: paging?
-//     let cursor;
-// 	connectDb(url).then( (db) => {
-// 	    if(skip !== undefined && limit !== undefined){
-// 		cursor = db.collection('bills')
-// 		    .find().skip(skip).limit(limit);
-// 	    }else{
-// 		cursor = db.collection('bills').find();
-// 	    }
-// 	    let result = [];
-// 	    cursor.each( (error, item) => {
-// 		if (error != null) reject(error);
-// 		if (item != null){
-// 		    result.push(item);
-// 		}else{
-// 		    cursor.close();
-// 		    db.close();
-// 		    resolve(result);
-// 		}
-// 	    });
-// 	});
-//     });
-// };
