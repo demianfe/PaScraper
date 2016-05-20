@@ -1,42 +1,89 @@
 import request from 'request-promise';
 import crypto from 'crypto';
-import { getCongressmenByPeriod } from './mongo-client';
+import { findObjects, getCongressmenByPeriod } from './mongo-client';
+import { popitBaseUrl, PopitApikey } from './config';
 
-let baseUrl = 'http://parlamento.popit.parlamentoabierto.org.py:8000/api/v0.1';
-
-const headers = {'Apikey': '99f5af4b78f75c222d643dab10c3eb96777a2be9',
-		'Content-Type': 'application/json'};
+const headers = {'Apikey': PopitApikey,
+		 'Content-Type': 'application/json'};
 
 let options = {
     headers: headers,
     json: true
 };
 
-let executeRequest = (options) => {
-    return request(options)
-	.then((body) => {
-	    return body;
-    }).catch( (err) => {
-	console.log('....failed');
-	//console.trace(err);
-	throw err;
-    });
-};
-
 //genertic call to create entities on popit
 let createObject = (object, uri) => {
-    options.uri = uri;
-    options.body = object;
-    options.method = 'POST';
-    executeRequest(options).then( (result) => {
-	console.log(result);
+    return new Promise( (resolve, reject) => {
+	options.uri = uri;
+	options.body = object;
+	options.method = 'POST';
+	request(options).then( (result) => {
+	    resolve(result);
+	}).catch( (error) => {
+	    reject(error);
+	});
     });
 };
 
-let createMembership = (data) => {
-    let organization_id = data['organization_id'];
-    let person_id = data['person_id'];
-    let membership_id = organization_id + person_id;
+// http://parlamento.popit.parlamentoabierto.org.py:8000/api/v0.1/persons
+// http://parlamento.popit.parlamentoabierto.org.py:8000/api/v0.1/organizations
+// http://parlamento.popit.parlamentoabierto.org.py:8000/api/v0.1/memberships
+// http://parlamento.popit.parlamentoabierto.org.py:8000/api/v0.1/posts
+
+let getPopitPerson = (id) => {
+    options.uri = popitBaseUrl + '/persons/' + id;
+    options.method = 'GET';
+    return request(options).then( (data) => {
+	return(data);
+    });
+};
+
+
+let getPopitOrganization = (id) => {
+    return request({method: "GET", uri: popitBaseUrl + "/organizations"});   
+};
+
+let getPopitMembership = (id) => {
+    //TODO:
+};
+
+/* 
+ creates an organization if it does not already exists
+ */
+let createOrganization = (id, name, classification, description, email, url) => {
+    return new Promise( (resolve, reject) => {
+	//let orgId = crypto.createHmac('sha1', '').update(name).digest('hex');
+	request({method: "GET", uri: popitBaseUrl + "/organizations/"+String(id), json: true})
+	    .then( (response) => {
+		if(response.total !== 0){
+		    console.log("Ya existe la organizacion con id", id);
+		    resolve(response.result);
+		}
+	    }).catch ( (error) => {
+		if(error.statusCode == 404){
+		    let organization = {};
+		    organization.id = String(id);
+		    if(name !==undefined) organization.name = name;
+		    if(classification !==undefined) organization.classification = classification;//'Chamber';
+		    if(description !==undefined) organization.description = description;
+		    //apparently contact_details is not supported by popit's popolo implementation
+		    //if(email !==undefined) organization.contact_details = {type:"email", value: email}; 
+		    if(url !==undefined) organization.links = [{url: url}];
+		    console.log("creando comision", id, name);
+		    createObject(organization, popitBaseUrl + "/organizations")
+			.then( (result) => {
+			resolve(organization);
+			}).catch( (error) => {
+			    console.log(error.statusCode, error.error);
+			    reject(error);
+			});
+		}
+	    });	     
+    });
+};
+
+let createMembership = (organizationId, memberId) => {
+    let membership_id = organizationId + memberId;
     //r = requests.get(url_string + '/memberships/' + membership_id);
     if (r.status_code == 404){
 	data['id'] = membership_id;
@@ -48,67 +95,74 @@ let createMembership = (data) => {
     }
 };
 
-let createOrganization = (name, classification) => {
-    let orgId = crypto.createHmac('sha1', '').update(name).digest('hex');
-    //TODO: get from baseUrl + /origanization to check for existence
-    //if not creat, if it does just link
-    let organization = {};
-    organization.id = orgId;
-    organization.name = name;
-    organization.classification = classification;//'Chamber';
-    //TODO: add createObject call
+let postMembersAndMemberships = (congresista) =>{
+    return findObjects('comisiones',
+		       {"miembros.idParlamentario":
+			congresista.idParlamentario})
+	.then( (comisiones) => {
+	    //itereate over comisiones
+	    //create as memberships
+	    //asign them to the congressman
+	    //save congressman
+	    return comisiones.reduce( (sequence, comision) => {
+		createOrganization(comision.idComision,
+				   comision.nombreComision,
+				   "Comision",
+				   comision.competenciaComision,
+				   comision.email,
+				   comision.appURL)
+		    .then( (popitOrganization) => {
+			console.log(popitOrganization);
+		    });
+	    });
+	}, Promise.resolve());
 };
 
-let createCommittees = () => {
-    //TODO: crear comisiones
-};
 
-getCongressmenByPeriod('2013-2018').then( (congressmen) => {
-    for (let c of congressmen){
-	let person = {};
-	// _id: 56c3bbd45a67474b3de71a77,
-	person.id= c.idParlamentario;//: 100260
-	person.name = c.nombres + ' ' + c.apellidos;
-	person.img = c.fotoURL;//: 'http://sil2py.senado.gov.py/images/100260.jpg',
-	//appURL: 'http://sil2py.senado.gov.py/formulario/verProyectosParlamentario.pmf?q=verProyectosParlamentario/100260',
-	person.contact_details=[{type: 'email',
-				 label: 'Correo Electronico',
-				 value: c.emailParlamentario},
-				{type: 'phone',
-				 label: 'Telefono',
-				 value: c.telefonoParlamentario}];	
-	//obtener sus organizaciones(partido, camara) desde la base de datos
-	//crear organizaciones y membresias
-	//TODO: add createObject call
-    }
-});
-
-let getPopitPerson = (id) => {
-    options.uri = baseUrl + '/persons/' + id;
-    options.method = 'GET';
-    return executeRequest(options).then( (data) => {
-	return(data);
+export let popitCreateAll = () => {
+    getCongressmenByPeriod('2013-2018').then( (congressmen) => {
+	congressmen.reduce( (sequence, c) => {
+	    return sequence.then( () => {
+		let person = {};
+		// _id: 56c3bbd45a67474b3de71a77,
+		person.id = c.idParlamentario;//: 100260
+		person.name = c.nombres + ' ' + c.apellidos;
+		person.img = c.fotoURL;//: 'http://sil2py.senado.gov.py/images/100260.jpg',
+		//appURL: 'http://sil2py.senado.gov.py/formulario/verProyectosParlamentario.pmf?q=verProyectosParlamentario/100260',
+		person.contact_details=[{type: 'email',
+					 label: 'Correo Electronico',
+					 value: c.emailParlamentario},
+					{type: 'phone',
+					 label: 'Telefono',
+					 value: c.telefonoParlamentario}];
+		return postMembersAndMemberships(c);
+		    
+		//guardar las comisiones y asociarlas al parlamentario
+		//obtener sus organizaciones(partido, camara) desde la base de datos
+		//db.comisiones.find({"miembros.idParlamentario" : 100084}).count()	    
+		//crear partido politico
+		//recibir el id, y asociar al parlamentario						      
+		//crear membresia => igual que con partido politico
+		//crear organizaciones y membresias
+		//TODO: add createObject call	
+	    });
+	}, Promise.resolve());
     });
-};
-
-let getPopitOrganization = (id) => {
-    //TODO:
-};
-
-let getPopitMembership = (id) => {
-    //TODO:
 };
 
 
 //######################
 //##### Test Code ######
 //######################
-getPopitPerson(1000911).then((data) => {
-    console.log(data);    
-}).catch( (error) => {
-    if(error.statusCode && error.statusCode == 404){
-	console.log('la persona ya existe');
-    }
-});
+popitCreateAll();
 
-//createObject({name: 'The New Test Organization'}, baseUrl + '/organizations');
+// getPopitPerson(1000911).then((data) => {
+//     console.log(data);    
+// }).catch( (error) => {
+//     if(error.statusCode && error.statusCode == 404){
+// 	console.log(error);
+// 	console.log('la persona ya existe');
+//     }
+// });
+
+//createObject({name: 'The New Test Organization'}, popitBaseUrl + '/organizations');
