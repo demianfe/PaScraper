@@ -252,3 +252,63 @@ export let downloadBills = (newFiles) => {
 	}, Promise.resolve());
     });
 };
+
+
+let obtenerPeriodos = () => {
+    options.uri = baseUri + "periodo/";
+    return request(options).then( (periodos) => {
+	saveObjects('periodos', periodos);
+    }).catch( (error) => {
+	//jsut trace the error
+	console.trace(error);
+    });
+};
+
+let obtenerMiembrosComision = (comision) => {
+    //baseUri + "comision/comisionId/miembros/periodoId"
+    console.log("Obteniendo miembros de la comision ", comision.idComision);
+    findObjects("periodos", {"periodoLegislativo" : "2013-2018"}).then( (periodos) => {
+	periodos.forEach( (periodo) => {
+	    options.uri = baseUri + "comision/"
+		+ comision.idComision + "/miembros/"
+		+ periodo.idPeriodoParlamentario;
+	    console.log(options.uri);
+	    request(options).then( (miembros) => {
+		comision = Object.assign({}, comision, miembros);
+		upsertObject("comisiones", comision);
+	    }).catch( (error) => {
+	    	//jsut trace the error
+	    	console.trace(error);
+	    });
+	});
+    }).catch( (error) => {
+    	//jsut trace the error
+    	console.trace(error);
+    });
+};
+
+let obtenerComisiones = () => {
+    options.uri = baseUri + "comision/";
+    return request(options).then( (comisiones) => {
+	saveObjects('comisiones', comisiones);	
+    }).catch( (error) => {
+	//jsut trace the error
+	console.trace(error);
+    });
+};
+
+export let updateComisionsAndMembers = () => {
+    removeCollection("comisiones");
+    obtenerComisiones().then( () =>{
+	findObjects('comisiones').then( (comisiones) => {
+	    //console.log(comisiones.length);
+	    comisiones.reduce( (sequence, comision) => {
+		return sequence.then( () => {
+		    obtenerMiembrosComision(comision);
+		});
+	    }, Promise.resolve());
+	});
+    });
+};
+
+
