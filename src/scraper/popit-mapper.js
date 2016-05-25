@@ -38,13 +38,41 @@ let getPopitPerson = (id) => {
     });
 };
 
-
 let getPopitOrganization = (id) => {
     return request({method: "GET", uri: popitBaseUrl + "/organizations"});   
 };
 
-let getPopitMembership = (id) => {
-    //TODO:
+let createMembership = (organizationId, memberId) => {
+    let membershipId = organizationId + memberId;
+    //r = requests.get(url_string + '/memberships/' + membership_id);
+    let data = {};
+    let localOptions = {method: "GET",
+			uri: popitBaseUrl + "/memberships/" + String(membershipId),
+			json: true};
+    localOptions.headers = headers;
+    return new Promise( (resolve, reject) => {
+	return request(localOptions).then((response) => {
+	    if (response.total !== 0){
+		console.log("ya existe membresia");
+		resolve(response.result);
+	    }
+	}).catch( (error) => {
+	    if(error.statusCode == 404){
+		data.id = membershipId;
+		data.organization_id = organizationId;
+		data.person_id = memberId;
+		//TODO: add createObject call
+		//let mem = api.memberships.post(data);
+		createObject(data, popitBaseUrl + "/memberships")
+		    .then( (result) => {
+			resolve(result);
+		    }).catch( (error) => {
+			console.log(error.statusCode, error.error);
+			reject(error);
+		    });
+	    }
+	});
+    });
 };
 
 /* 
@@ -63,9 +91,12 @@ let createOrganization = (id, name, classification, description, email, url) => 
 		if(error.statusCode == 404){
 		    let organization = {};
 		    organization.id = String(id);
-		    if(name !==undefined) organization.name = name;
-		    if(classification !==undefined) organization.classification = classification;//'Chamber';
-		    if(description !==undefined) organization.description = description;
+		    if(name !==undefined)
+			organization.name = name;
+		    if(classification !==undefined)
+			organization.classification = classification;//'Chamber';
+		    if(description !==undefined)
+			organization.description = description;
 		    //apparently contact_details is not supported by popit's popolo implementation
 		    //if(email !==undefined) organization.contact_details = {type:"email", value: email}; 
 		    if(url !==undefined) organization.links = [{url: url}];
@@ -82,18 +113,6 @@ let createOrganization = (id, name, classification, description, email, url) => 
     });
 };
 
-let createMembership = (organizationId, memberId) => {
-    let membership_id = organizationId + memberId;
-    //r = requests.get(url_string + '/memberships/' + membership_id);
-    if (r.status_code == 404){
-	data['id'] = membership_id;
-	data['organization_id'] = organization_id;
-	//TODO: add createObject call
-	//let mem = api.memberships.post(data);
-    }else{
-        console.log("ya existe membresia");
-    }
-};
 
 let postMembersAndMemberships = (congresista) =>{
     return findObjects('comisiones',
@@ -104,6 +123,13 @@ let postMembersAndMemberships = (congresista) =>{
 	    //create as memberships
 	    //asign them to the congressman
 	    //save congressman
+	    //TODO: create party as organization and then membership
+	    let partyId = crypto.createHmac('sha1', '').update(congresista.partidoPolitico).digest('hex');
+	    let party =  {id: partyId,
+			  name: congresista.partidoPolitico};
+
+	    //createParty 
+	    
 	    return comisiones.reduce( (sequence, comision) => {
 		createOrganization(comision.idComision,
 				   comision.nombreComision,
@@ -112,12 +138,13 @@ let postMembersAndMemberships = (congresista) =>{
 				   comision.email,
 				   comision.appURL)
 		    .then( (popitOrganization) => {
-			console.log(popitOrganization);
+			createMembership(popitOrganization.id, congresista.idParlamentario);
+			
+			//create membership
 		    });
 	    });
 	}, Promise.resolve());
 };
-
 
 export let popitCreateAll = () => {
     getCongressmenByPeriod('2013-2018').then( (congressmen) => {
@@ -135,8 +162,9 @@ export let popitCreateAll = () => {
 					{type: 'phone',
 					 label: 'Telefono',
 					 value: c.telefonoParlamentario}];
+
 		return postMembersAndMemberships(c);
-		    
+		
 		//guardar las comisiones y asociarlas al parlamentario
 		//obtener sus organizaciones(partido, camara) desde la base de datos
 		//db.comisiones.find({"miembros.idParlamentario" : 100084}).count()	    

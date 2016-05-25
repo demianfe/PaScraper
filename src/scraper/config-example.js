@@ -1,3 +1,5 @@
+/* Example configuration, edit it properly and rename it to config.js */
+
 export const downloadDir = '/Data/tmp/parlamentoabierto/';
 
 //popit configuration
