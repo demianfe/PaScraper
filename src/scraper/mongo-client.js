@@ -209,11 +209,19 @@ export let countUniqueBills = () => {
      });;
 };
 
-export let getSessionsWithVotings = () => {
+export let getSessionsWithVotings = (year) => {
     return new Promise( (resolve, reject) => {
 	connectDb(url).then( (db) => {
-	    let cursor = db.collection('sesiones')
+	    let cursor = undefined;
+	    if(year !== undefined){
+		cursor = db.collection('sesiones')
+		    .find({$and: [{year: "2016"},
+				  {'details.votings.link': {$exists:true}}]}); 
+	    }else{
+		cursor = db.collection('sesiones')
 		    .find({'details.votings.link': {$exists:true}});
+	    }
+	    
 	    let sessions = [];
 	    cursor.each( (error, sesion) => {
 		if (error != null) reject(error);
@@ -228,9 +236,9 @@ export let getSessionsWithVotings = () => {
     });
 };
 
-export let getRTFLinks = () => {
+export let getRTFLinks = (year) => {
     return new Promise( (resolve, reject) => {
-	getSessionsWithVotings().then( (sesiones) => {
+	getSessionsWithVotings(year).then( (sesiones) => {
 	    let links = [];
 	    for(let sesion of sesiones){
     		for (let detail of sesion.details){
@@ -276,12 +284,14 @@ export let getVotings = () => {
 	    //if those list are empty there's nothing to do.
 	    let cursor = db.collection('votings')
 		    .find(
-			{ $or: [
-			    {yes: {$ne: []}},
-			    {no: {$ne: []}},
-			    {abstention: {$ne: []}},
-			    {excluded : {$ne: []}}
-			]});
+			{$and: [{year: "2013"},
+				{ $or: [
+				    {yes: {$ne: []}},
+				    {no: {$ne: []}},
+				    {abstention: {$ne: []}},
+				    {excluded : {$ne: []}}
+				]}
+			       ]});
 	    cursor.each( (error, voting) => {
 		if (error != null) reject(error);
 		if (voting !== null){

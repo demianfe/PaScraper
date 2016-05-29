@@ -43,7 +43,7 @@ let getPopitOrganization = (id) => {
 };
 
 let createMembership = (organizationId, memberId) => {
-    let membershipId = organizationId + memberId;
+    let membershipId = String(organizationId) + String(memberId);
     //r = requests.get(url_string + '/memberships/' + membership_id);
     let data = {};
     let localOptions = {method: "GET",
@@ -60,13 +60,15 @@ let createMembership = (organizationId, memberId) => {
 	    if(error.statusCode == 404){
 		data.id = membershipId;
 		data.organization_id = organizationId;
-		data.person_id = memberId;
+		data.person_id = String(memberId);
 		//TODO: add createObject call
 		//let mem = api.memberships.post(data);
+		
 		createObject(data, popitBaseUrl + "/memberships")
 		    .then( (result) => {
 			resolve(result);
 		    }).catch( (error) => {
+			console.log(data);
 			console.log(error.statusCode, error.error);
 			reject(error);
 		    });
@@ -80,8 +82,7 @@ let createMembership = (organizationId, memberId) => {
  */
 let createOrganization = (id, name, classification, description, email, url) => {
     return new Promise( (resolve, reject) => {
-	//let orgId = crypto.createHmac('sha1', '').update(name).digest('hex');
-	request({method: "GET", uri: popitBaseUrl + "/organizations/"+String(id), json: true})
+	request({method: "GET", uri: popitBaseUrl + "/organizations/" + String(id), json: true})
 	    .then( (response) => {
 		if(response.total !== 0){
 		    console.log("Ya existe la organizacion con id", id);
@@ -100,10 +101,10 @@ let createOrganization = (id, name, classification, description, email, url) => 
 		    //apparently contact_details is not supported by popit's popolo implementation
 		    //if(email !==undefined) organization.contact_details = {type:"email", value: email}; 
 		    if(url !==undefined) organization.links = [{url: url}];
-		    console.log("creando comision", id, name);
+		    console.log("creando", classification, "con id y nombre",id, name);
 		    createObject(organization, popitBaseUrl + "/organizations")
 			.then( (result) => {
-			resolve(organization);
+			    resolve(organization);
 			}).catch( (error) => {
 			    console.log(error.statusCode, error.error);
 			    reject(error);
@@ -119,19 +120,19 @@ let postMembersAndMemberships = (congresista) =>{
 		       {"miembros.idParlamentario":
 			congresista.idParlamentario})
 	.then( (comisiones) => {
-	    //itereate over comisiones
-	    //create as memberships
-	    //asign them to the congressman
-	    //save congressman
-	    //TODO: create party as organization and then membership
 	    let partyId = crypto.createHmac('sha1', '').update(congresista.partidoPolitico).digest('hex');
 	    let party =  {id: partyId,
 			  name: congresista.partidoPolitico};
-
-	    //createParty 
-	    
+	    //createParty
+	    console.log("Creando partido politico.");
+	    createOrganization(partyId,
+			       congresista.partidoPolitico,
+			       "Partido")
+		.then( (popitOrganization) => {
+		    createMembership(popitOrganization.id, congresista.idParlamentario);
+		});
 	    return comisiones.reduce( (sequence, comision) => {
-		createOrganization(comision.idComision,
+		createOrganization(String(comision.idComision),
 				   comision.nombreComision,
 				   "Comision",
 				   comision.competenciaComision,
@@ -139,8 +140,6 @@ let postMembersAndMemberships = (congresista) =>{
 				   comision.appURL)
 		    .then( (popitOrganization) => {
 			createMembership(popitOrganization.id, congresista.idParlamentario);
-			
-			//create membership
 		    });
 	    });
 	}, Promise.resolve());
@@ -148,31 +147,28 @@ let postMembersAndMemberships = (congresista) =>{
 
 export let popitCreateAll = () => {
     getCongressmenByPeriod('2013-2018').then( (congressmen) => {
-	congressmen.reduce( (sequence, c) => {
+	congressmen.reduce( (sequence, congressman) => {    
 	    return sequence.then( () => {
 		let person = {};
 		// _id: 56c3bbd45a67474b3de71a77,
-		person.id = c.idParlamentario;//: 100260
-		person.name = c.nombres + ' ' + c.apellidos;
-		person.img = c.fotoURL;//: 'http://sil2py.senado.gov.py/images/100260.jpg',
+		person.id = String(congressman.idParlamentario);//: 100260
+		person.name = congressman.nombres + ' ' + congressman.apellidos;
+		person.img = congressman.fotoURL;//: 'http://sil2py.senado.gov.py/images/100260.jpg',
 		//appURL: 'http://sil2py.senado.gov.py/formulario/verProyectosParlamentario.pmf?q=verProyectosParlamentario/100260',
 		person.contact_details=[{type: 'email',
 					 label: 'Correo Electronico',
-					 value: c.emailParlamentario},
+					 value: congressman.emailParlamentario},
 					{type: 'phone',
 					 label: 'Telefono',
-					 value: c.telefonoParlamentario}];
-
-		return postMembersAndMemberships(c);
-		
-		//guardar las comisiones y asociarlas al parlamentario
-		//obtener sus organizaciones(partido, camara) desde la base de datos
-		//db.comisiones.find({"miembros.idParlamentario" : 100084}).count()	    
-		//crear partido politico
-		//recibir el id, y asociar al parlamentario						      
-		//crear membresia => igual que con partido politico
-		//crear organizaciones y membresias
-		//TODO: add createObject call	
+					 value: congressman.telefonoParlamentario}];
+		console.log("Creando congresista", person.id, person.name);
+		//postPerson(person)
+		return createObject(person, popitBaseUrl + '/persons').then( (result) =>{
+		    console.log(result);
+		    return postMembersAndMemberships(congressman);
+		}).catch( (error) =>{
+		    console.log(error);
+		});
 	    });
 	}, Promise.resolve());
     });
@@ -183,14 +179,3 @@ export let popitCreateAll = () => {
 //##### Test Code ######
 //######################
 popitCreateAll();
-
-// getPopitPerson(1000911).then((data) => {
-//     console.log(data);    
-// }).catch( (error) => {
-//     if(error.statusCode && error.statusCode == 404){
-// 	console.log(error);
-// 	console.log('la persona ya existe');
-//     }
-// });
-
-//createObject({name: 'The New Test Organization'}, popitBaseUrl + '/organizations');
