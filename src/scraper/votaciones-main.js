@@ -10,7 +10,7 @@ import { parseSession } from './session-parser';
 import { votingHTMLParser } from './rtf-parser';
 import { checkFileExistence, trimString, promisifiedReadFs,
 	 promisifiedExec, createDirectory } from './utils';
-import { getDownloadedRTF, saveObjects, getSessionById,
+import { getDownloadedRTF, saveObjects, removeCollection, getSessionById,
 	 upsertObject, saveSession, getRTFLinks } from './mongo-client';
 import { downloadDir } from './config';
 
@@ -83,11 +83,11 @@ let downloadRTF = (link) => {
 
 //TODO:recieve a list of objects instead
 //with data related to the session
-export let downloadRTFs = () => {
+export let downloadRTFs = (year) => {
     let arr;
     let outDir = downloadDir + 'rtf/';
     createDirectory(outDir);
-    getRTFLinks().then( (links) => {
+    getRTFLinks(year).then( (links) => {
 	links.reduce( (sequence, link) => {
 	    return sequence.then( () =>{
 		let url  = host + '/plenaria/'+ link.link;
@@ -137,7 +137,10 @@ let saveVoting = (rtfData, session) =>{
     }
 };
 
-export let parseRTFs = () => {    
+export let parseRTFs = () => {
+    //delete all votings first
+    console.log(removeCollection("votings"));
+    
     getDownloadedRTF().then( (rtfList) => {
 	rtfList.reduce( (sequence, rtf) => {
 	    return sequence.then( () => {
