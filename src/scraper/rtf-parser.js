@@ -5,8 +5,9 @@ import iconv from 'iconv-lite';
 import { trimString, promisifiedFs, rtfToHtml } from './utils';
 
 const baseDir = '/Data/devel/projects/tedic/src/PaScrapper/resources/';
-
-const sections = ['Nombre Propuesta:', 'Sí ( Voto', 'No ( Voto',
+// index 1 and 2 corresponds to the firs set of data: the YES voters
+// the difference is the accent
+const sections = ['Nombre Propuesta:', 'Sí ( Voto', 'Si ( Voto','No ( Voto',
 		  'Abstención (', 'No-Vota', 'Page 1 of 1'];
 
 //obj: the object the list is beeing attached to
@@ -15,17 +16,17 @@ const sections = ['Nombre Propuesta:', 'Sí ( Voto', 'No ( Voto',
 let addValuesToList = (obj, objList, values) => {
     let $ = cheerio.load(values);
     //console.log($);
-    let tdList = $('td');    
+    let tdList = $('td');
     let index = 0;
     while (index < tdList.length){
 	let text = trimString($(tdList[index]).text());
 	let add = true;
 	for(let section of sections){
 	    //exclude section strings
-	    if (text.indexOf(section) != -1){
+	    if (text.indexOf(section) !== -1){
 		add = false;
 	    }
-	}	
+	}
 	if (add && text !== ''){
 	    obj[objList].push(text);
 	}
@@ -34,10 +35,9 @@ let addValuesToList = (obj, objList, values) => {
     return obj;
 };
 
-//TODO: if nothing found slide one columnt to the right
-export let votingHTMLParser = (data) => {
+let parseHTML = (data,dataIndex ) => {
     /* parses the html result of the conversion rtf -> html */
-    data = iconv.decode(data, 'utf8');    
+    data = iconv.decode(data, 'utf8');
     let $ = cheerio.load(data);
     let trList = $('tr'); //works for most cases
     let voting = {};
@@ -69,18 +69,19 @@ export let votingHTMLParser = (data) => {
 	//4th division: Abstención ( Votos: 0 )
 	//5th division: No-Votan ( Total: 8 )
 	//columns 1, 3 and 5 contain text
-	let firstText = $(tdList[0]).text();
+	let firstText = $(tdList[dataIndex]).text();
 	//TODO:improve algorithm?
 	if(firstText.indexOf(sections[0]) > -1){
 	    //the next row column 1 contains the value
 	    currentSection = sections[0];
-	}else if(firstText.indexOf(sections[1]) > -1){
+	}else if(firstText.indexOf(sections[1]) > -1 ||
+		 firstText.indexOf(sections[2]) > -1){
 	    currentSection = sections[1];
-	}else if(firstText.indexOf(sections[2]) > -1){
-	    currentSection = sections[2];
 	}else if(firstText.indexOf(sections[3]) > -1){
-	    currentSection = sections[3];
+	    currentSection = sections[2];
 	}else if(firstText.indexOf(sections[4]) > -1){
+	    currentSection = sections[3];
+	}else if(firstText.indexOf(sections[5]) > -1){
 	    currentSection = sections[4];
 	}
 	if(currentSection === sections[0]){
@@ -96,6 +97,22 @@ export let votingHTMLParser = (data) => {
 	}else if(currentSection === sections[4]){
 	    voting = addValuesToList(voting, 'excluded', trList[key]);
 	}
+    }
+    return voting;
+};
+//TODO: if nothing found slide one columnt to the right
+export let votingHTMLParser = (data) => {
+    //index where data should be found
+    //if not found normaly is the next row
+    let dataIndex = 0;
+    let voting = parseHTML(data, dataIndex);
+    //if all values are 0, there's someting wrong
+    //old rtf files sometimes contain data one on the next column    
+    if (voting.yes.length == 0 &&
+	voting.no.length == 0 &&
+	voting.abstention.length == 0 &&
+	voting.excluded.length == 0){
+	voting = parseHTML(data, dataIndex + 1);
     }
     return voting;
 };
