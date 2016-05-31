@@ -15,7 +15,7 @@ let args = process.argv.slice(3, process.argv.length);
 let printHelp = () => {
     console.log("Usage: ");
     console.log("--crawl-sessions \t args: year, the year to crawl.");
-    console.log("--download-rtfs \t downlad rtf files stored in the data base.");
+    console.log("--download-rtfs \t downlad rtf. Args: year, download files from that year.");
     console.log("--parse-rtfs \t\t parses all dowonloaded rtfs and saves to monto db.");
     console.log("--map-votaciones \t maps diputados and voting results to votacionespa.");
     console.log("--get-congressmen \t downloads congressmen data.");
@@ -38,7 +38,7 @@ case "--crawl-sessions":
     break;
 case "--download-rtfs":
     console.log("Downloading rtfs");
-    downloadRTFs();
+    downloadRTFs(args[0]);
     break;
 case "--parse-rtfs":
     parseRTFs();
