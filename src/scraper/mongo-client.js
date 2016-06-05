@@ -215,13 +215,12 @@ export let getSessionsWithVotings = (year) => {
 	    let cursor = undefined;
 	    if(year !== undefined){
 		cursor = db.collection('sesiones')
-		    .find({$and: [{year: "2016"},
+		    .find({$and: [{year: year},
 				  {'details.votings.link': {$exists:true}}]}); 
 	    }else{
 		cursor = db.collection('sesiones')
 		    .find({'details.votings.link': {$exists:true}});
 	    }
-	    
 	    let sessions = [];
 	    cursor.each( (error, sesion) => {
 		if (error != null) reject(error);
@@ -239,6 +238,7 @@ export let getSessionsWithVotings = (year) => {
 export let getRTFLinks = (year) => {
     return new Promise( (resolve, reject) => {
 	getSessionsWithVotings(year).then( (sesiones) => {
+	    console.log(sesiones.length);
 	    let links = [];
 	    for(let sesion of sesiones){
     		for (let detail of sesion.details){
@@ -282,16 +282,19 @@ export let getVotings = () => {
 	connectDb(url).then( (db) => {
 	    let result = [];
 	    //if those list are empty there's nothing to do.
+	    console.log("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
+	    console.log("WARNING: query limited ");
+	    console.log("mongoClient.getVotings");
+	    console.log("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
 	    let cursor = db.collection('votings')
-		    .find(
-			{$and: [{year: "2013"},
-				{ $or: [
-				    {yes: {$ne: []}},
-				    {no: {$ne: []}},
-				    {abstention: {$ne: []}},
-				    {excluded : {$ne: []}}
-				]}
-			       ]});
+		.find({ $or: [
+		    {yes: {$ne: []}},
+		    {no: {$ne: []}},
+		    {abstention: {$ne: []}},
+		    {excluded : {$ne: []}}
+		]});
+		// .skip(10)
+		// .limit(1);
 	    cursor.each( (error, voting) => {
 		if (error != null) reject(error);
 		if (voting !== null){
