@@ -70,6 +70,8 @@ let downloadRTF = (link) => {
 	if(!fs.existsSync (link.fileName)){
 	    promisifiedExec('curl ' + link.url + ' -o ' + link.fileName)
 		.then( (stdout) => {
+		    console.log('-->', link);
+		    saveObjects('downladed_rtf', link);
 		    resolve(link);
 		}).catch( (error) => {
 		    console.log(error);
@@ -81,36 +83,43 @@ let downloadRTF = (link) => {
     });
 };
 
-//TODO:recieve a list of objects instead
-//with data related to the session
-export let downloadRTFs = (year) => {
+let downloadRTFSByYear = (year, outDir) => {
     let arr;
-    let outDir = downloadDir + 'rtf/';
-    createDirectory(outDir);
-    getRTFLinks(year).then( (links) => {
-	links.reduce( (sequence, link) => {
+    return getRTFLinks(year).then( (links) => {
+	return links.reduce( (sequence, link) => {	    
 	    return sequence.then( () =>{
 		let url  = host + '/plenaria/'+ link.link;
-		arr  = url.split('/');
-		let fileName = arr[arr.length - 1];
-		fileName = outDir + fileName;
-		link.url = url;
-		link.fileName = fileName;
-		if(link.url.indexOf('.mp3') == -1){
-		    return downloadRTF(link).then( (link) => {
-			console.log('----------------------------');
-			console.log(link);
-			saveObjects('downladed_rtf', link);
-			console.log('----------------------------');
-		    });
-		}else{
-		    return null;
-		}
+	    	arr  = url.split('/');
+	    	let fileName = arr[arr.length - 1];
+	    	fileName = outDir + fileName;
+	    	link.url = url;
+	    	link.fileName = fileName;
+		link.year = year;
+	    	if(link.url.indexOf('.mp3') == -1){
+	    	    return downloadRTF(link);
+	    	}
 	    }).catch( (err) => {
-		console.trace(err);
-	    });
-	}, Promise.resolve());
+	    	console.trace(err);
+	     });
+	 }, Promise.resolve());
     });
+
+};
+
+export let downloadRTFs = (year) => {
+    let outDir = downloadDir + 'rtf/';
+    createDirectory(outDir);
+    let years = [];
+    if (year != undefined){
+	years.push(year);
+    }else{
+	years = ["2013", "2014", "2015", "2016"];
+    }
+    years.reduce( (sequence, year) => {
+	return sequence.then( () => {
+	    return downloadRTFSByYear(year, outDir);
+	});
+    }, Promise.resolve());
 };
 
 let saveVoting = (rtfData, session) =>{
@@ -118,10 +127,12 @@ let saveVoting = (rtfData, session) =>{
     while(detailsIndex < session.details.length){
 	let sd = session.details[detailsIndex];
 	if(sd !== undefined && sd.votings !== undefined){
+	    //console.log(sd);
 	    let votingIndex = 0;
 	    while(votingIndex < sd.votings.length){
-		let v = sd.votings[votingIndex];
+		let v = sd.votings[votingIndex];;
 		if(rtfData.link.search(v.link) !== -1){
+		    rtfData.session_url = session.url;
 		    rtfData.year = session.year;
 		    rtfData.result = v.title;
 		    rtfData.president = session.PRESIDENTE
@@ -137,30 +148,28 @@ let saveVoting = (rtfData, session) =>{
     }
 };
 
+
+//TODO: debug this part
 export let parseRTFs = () => {
     //delete all votings first
     console.log(removeCollection("votings"));
-    
     getDownloadedRTF().then( (rtfList) => {
-	rtfList.reduce( (sequence, rtf) => {
+	return rtfList.reduce( (sequence, rtf) => {
 	    return sequence.then( () => {
 		return promisifiedExec(util.format('unrtf --html %s', rtf.fileName))
 		    .then( (html) => {
-			console.log('Parsing ', rtf.fileName);
 			let data = votingHTMLParser(html);
-			for (let k in data) {
-			    rtf[k] = data[k];
-			    
-			}
-			return getSessionById(rtf.session_id).then( (session) => {			 
-			    console.log("getting the session and saving", session.id);
-			    //iterate over session.votings and merge with rtfData
-			    //save rtfs that where not parsed
-			    saveVoting(rtf, session);
-			});
+			data = Object.assign({}, data, rtf);
+			return getSessionById(rtf.session_id).then( (session) => {
+		    	    console.log("getting the session and saving", session.id);
+		    	    //iterate over session.votings and merge with rtfData
+		    	    //save rtfs that where not parsed
+		    	    saveVoting(data, session);
+		    	    //console.log(data);
+		    	});
 		    }).catch( (error) => {
-			console.log(error);
-		    });	
+		    	console.log(error);
+		    });
 	    });
 	}, Promise.resolve());
     });
