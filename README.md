@@ -32,4 +32,27 @@ Editar el archivo `src/scraper/config.js` con los valores apropiados.
 npm run build
 ```
 #### Correr el Proyecto
+Sin parametros imprime el mesaje de ayuda:
+```
+npm start 
+```
+
+Deberia mostrar lo siguiente:
+```
+Usage: 
+npm start -- <command>
+
+Possible commands are:
+crawl-sessions   args: year, the year to crawl.
+download-rtfs    downlad rtf. Args: year, download files from that year.
+parse-rtfs               parses all dowonloaded rtfs and saves to monto db.
+map-votaciones   maps diputados and voting results to votacionespa.
+get-congressmen          downloads congressmen data.
+download-bills   Download all bills related to all congressmen 
+                         within this parlamentary period.
+download-bills-files     Download files related to bills. 
+                         download-bills should be executed before.
+map-bills                maps all bills to bill-it.
+update-bills             updates bills with status "EN TRAMITE"
+```
 
