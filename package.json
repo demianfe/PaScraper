@@ -21,7 +21,7 @@
   },
   "scripts": {
     "build": "babel src --presets es2015 -d lib",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node lib/main.js"
   },
   "author": "Demian Florentin <demian@sinergetica.com>",
   "license": "MIT"
