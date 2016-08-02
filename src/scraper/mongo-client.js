@@ -341,7 +341,7 @@ export let getSessionById = (id) => {
 	connectDb(url).then( (db) =>{
 	    let s = db.collection('sesiones')
 		    .findOne({id: id});
-	    s.then( (data) => {
+	    s.then((data) => {
 		resolve(s);
 		db.close();
 	    });
@@ -407,6 +407,22 @@ export let congressmenBills = () => {
     });
 };
 
+export let getBillById = (id) => {
+  return new Promise((resolve, reject) => {
+    connectDb(url).then( (db) =>{
+      let s = db.collection('bills')
+	  .findOne({idProyecto: 103064});
+      s.then( (data) => {
+	resolve(data);
+	db.close();
+      });
+    }).catch( (error) => {
+      console.treace(error);
+      reject(error);
+    });
+  });
+};
+  
 export let getBills = (skip, limit, queryParams) => {
     //this function brings all bills from bills collection
     return new Promise( (resolve, reject) =>{
@@ -428,7 +444,6 @@ export let getBills = (skip, limit, queryParams) => {
 	    }
 
 	    let result = [];
-	    
 	    cursor.each( (error, item) => {
 		if (error != null) reject(error);
 		if (item != null){
