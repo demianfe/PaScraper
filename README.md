@@ -11,7 +11,7 @@ sudo apt-get install unrtf
 ```
 
 ### Instalar PaScraper
-##### Clonar el repositorio
+#### Clonar el repositorio
 ```
 git clone https://github.com/demianfe/PaScraper.git
 ```
