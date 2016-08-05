@@ -1,7 +1,8 @@
 'use strict';
 import MongoClient from 'mongodb';
 
-const url = 'mongodb://localhost:27017/parlamentoabierto';
+//const url = 'mongodb://localhost:27017/parlamentoabierto';
+import { mongoDBUrl } from './config';
 
 export let connectDb = (dburl) => {
     return new Promise((resolve, reject) =>{
@@ -20,7 +21,7 @@ export let connectDb = (dburl) => {
  *  use them with caution.
 */
 export let saveObjects = (collection, objects) => {
-    connectDb(url).then((db) =>{
+    connectDb(mongoDBUrl).then((db) =>{
 	    db.collection(collection).insert(objects, (err, inserted) => {   
 		if(err) throw err;
 		return db.close();
@@ -31,7 +32,7 @@ export let saveObjects = (collection, objects) => {
 };
 
 export let upsertObject = (collection, object) => {
-    connectDb(url).then((db) =>{
+    connectDb(mongoDBUrl).then((db) =>{
 	console.log('upserting..', object._id);
 	db.collection(collection)
 	    .update({_id: object._id},
@@ -48,7 +49,7 @@ export let upsertObject = (collection, object) => {
 
 export let findObjects = (collection, filter) => {
     //too generic, use it with caution
-    return connectDb(url).then( (db) => {
+    return connectDb(mongoDBUrl).then( (db) => {
 	let cursor;
 	let query = db.collection(collection);
 	if(query !== undefined){
@@ -80,7 +81,7 @@ export let removeCollection = (collection, query) => {
 	query = {};//remove all
     }
 
-    return connectDb(url).then( (db) => {
+    return connectDb(mongoDBUrl).then( (db) => {
 	console.log('Removing collection ', collection);
 	db.collection(collection).remove(query);
 	db.close();
@@ -90,7 +91,7 @@ export let removeCollection = (collection, query) => {
 /* End generic bulk mongo */
 
 export let insertToCollection = (collection, object) => {
-    connectDb(url).then((db) =>{
+    connectDb(mongoDBUrl).then((db) =>{
 	db.collection(collection).insert(object, (err, inserted) => {
 	    if(err) throw err;
 	    return db.close();
@@ -101,7 +102,7 @@ export let insertToCollection = (collection, object) => {
 };
 
 export let saveSession = (sesion) =>{
-    connectDb(url).then((db) =>{
+    connectDb(mongoDBUrl).then((db) =>{
 	console.log('saving new sesion to db');
 	db.collection('sesiones').insert(sesion, (err, inserted) => {
 	    if(err) throw err;
@@ -114,7 +115,7 @@ export let saveSession = (sesion) =>{
 };
 
 export let saveCongressmen = (congressmen) => {
-    connectDb(url).then( (db) =>{
+    connectDb(mongoDBUrl).then( (db) =>{
 	db.collection('congressmen').insert(congressmen, (err, inserted) =>{
 	    if (err) throw err;    
 	    console.dir('Successfully inserted', JSON.stringify(inserted));
@@ -140,7 +141,7 @@ let readCongressmen = (db, cursor) =>{
 };
 
 export let getCongressmenByPeriod = (period) => {
-    return connectDb(url).then( (db) => {
+    return connectDb(mongoDBUrl).then( (db) => {
 	let cursor = db.collection('parlamentarios')
 		.find({'periodoLegislativo':period});
 	return readCongressmen(db, cursor);
@@ -154,7 +155,7 @@ export let getCongressmenByPeriod = (period) => {
 };
 
 export let getCongressmanById = (id) => {
-    return connectDb(url).then((db) =>{
+    return connectDb(mongoDBUrl).then((db) =>{
 	let p = db.collection('parlamentarios')
 		.findOne({"idParlamentario": Number.parseInt(id)})
 		.then( (result)=> {
@@ -168,7 +169,7 @@ export let getCongressmanById = (id) => {
 export let getUniqueBills = () => {
     //this function returns the bills
     //associated to every congressman
-    return connectDb(url).then( (db) =>{
+    return connectDb(mongoDBUrl).then( (db) =>{
 	let cursor = db.collection('parlamentario_proyectos').find();
 	let uniqueIds = {};
 	let result = [];
@@ -197,7 +198,7 @@ export let getUniqueBills = () => {
 
 export let countUniqueBills = () => {
     //is this actually needed ?
-    return connectDb(url).then( (db) =>{
+    return connectDb(mongoDBUrl).then( (db) =>{
 	return new Promise( (resolve, reject) => {
 	  db.collection('bills').count().then( (result) => {
 	      resolve(result);
@@ -211,7 +212,7 @@ export let countUniqueBills = () => {
 
 export let getSessionsWithVotings = (year) => {
     return new Promise( (resolve, reject) => {
-	connectDb(url).then( (db) => {
+	connectDb(mongoDBUrl).then( (db) => {
 	    let cursor = undefined;
 	    if(year !== undefined){
 		cursor = db.collection('sesiones')
@@ -259,7 +260,7 @@ export let getRTFLinks = (year) => {
 
 export let getDownloadedRTF = () =>{
     return new Promise( (resolve, reject) => {
-	connectDb(url).then( (db) => {
+	connectDb(mongoDBUrl).then( (db) => {
 	    let cursor = db.collection('downladed_rtf').find();
 	    let rtfList = [];
 	    cursor.each( (error, rtf) => {
@@ -279,7 +280,7 @@ export let getDownloadedRTF = () =>{
 
 export let getVotings = () => {
     return new Promise( (resolve, reject) => {
-	connectDb(url).then( (db) => {
+	connectDb(mongoDBUrl).then( (db) => {
 	    let result = [];
 	    //if those list are empty there's nothing to do.
 	    console.log("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
@@ -315,7 +316,7 @@ export let getVotings = () => {
 
 export let getDiputados = () => {
     return new Promise( (resolve, reject) => {
-	connectDb(url).then( (db) => {
+	connectDb(mongoDBUrl).then( (db) => {
 	    let result = [];
 	    let cursor = db.collection('parlamentarios')
 		    .find({camaraParlamentario : "CAMARA DE DIPUTADOS",
@@ -338,7 +339,7 @@ export let getDiputados = () => {
 
 export let getSessionById = (id) => {
     return new Promise( (resolve, reject) => {
-	connectDb(url).then( (db) =>{
+	connectDb(mongoDBUrl).then( (db) =>{
 	    let s = db.collection('sesiones')
 		    .findOne({id: id});
 	    s.then((data) => {
@@ -354,7 +355,7 @@ export let getSessionById = (id) => {
 
 export let getSessionVotings = (sessionId) => {
     return new Promise( (resolve, reject) => {
-	connectDb(url).then( (db) => {
+	connectDb(mongoDBUrl).then( (db) => {
 	    let result = [];
 	    //if those list are empty there's nothing to do.
 	    let cursor = db.collection('votings')
@@ -377,7 +378,7 @@ export let getSessionVotings = (sessionId) => {
 };
 
 export let congressmanBills = (congressmanId) => {
-    return connectDb(url).then( (db) => {
+    return connectDb(mongoDBUrl).then( (db) => {
 	let obj = db.collection('parlamentario_proyectos')
 		.findOne({"idParlamentario" : Number.parseInt(congressmanId)})
 		.then( (result) => {
@@ -391,7 +392,7 @@ export let congressmanBills = (congressmanId) => {
 export let congressmenBills = () => {
     return new Promise( (resolve, reject) =>{
 	let result = [];
-	connectDb(url).then( (db) => {
+	connectDb(mongoDBUrl).then( (db) => {
 	    let cursor = db.collection('parlamentario_proyectos').find();
 	    cursor.each( (error, item) => {
 		if (error != null) reject(error);
@@ -409,7 +410,7 @@ export let congressmenBills = () => {
 
 export let getBillById = (id) => {
   return new Promise((resolve, reject) => {
-    connectDb(url).then( (db) =>{
+    connectDb(mongoDBUrl).then( (db) =>{
       let s = db.collection('bills')
 	  .findOne({idProyecto: 103064});
       s.then( (data) => {
@@ -427,7 +428,7 @@ export let getBills = (skip, limit, queryParams) => {
     //this function brings all bills from bills collection
     return new Promise( (resolve, reject) =>{
 	let cursor;
-	connectDb(url).then( (db) => {
+	connectDb(mongoDBUrl).then( (db) => {
 	    console.log("queryParams", queryParams);
 	    let query = db.collection('bills');
 	    if(queryParams != undefined){

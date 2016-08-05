@@ -1,9 +1,8 @@
 'use strict';
 import request from 'request-promise';
 import { getBills, countUniqueBills, getUniqueBills } from './mongo-client';
+import { billitHost } from './config';
 
-const host = 'http://localhost:8002';
-//const host = 'http://parlamentoabierto.org.py:8002';
 const secret_token = '75cc973db60d3e07beaa1630c4cb37ded228e5bb71853be068a573b1a2ee385379111f9b12847b285a7e2c2b2f918b2902f4edb04046319cf41148a642fa53d3';
 
 let headers = {"Content-Type": "application/json",
@@ -11,7 +10,7 @@ let headers = {"Content-Type": "application/json",
 
 let options  = {
     method: 'POST',
-    uri: host,
+    uri: billitHost,
     headers: headers,
     json: true
 };
@@ -121,7 +120,7 @@ let updateOrCreate = () => {
 let postProjects = (bill) =>{    
     console.log("loading bill with uuid=", bill.idProyecto);
     let billitObj = createBillObject(bill);
-    options.uri = host + '/bills';
+    options.uri = billitHost + '/bills';
     options.body = billitObj;
     return request(options).then( (response) => {
 	console.log('Creado exitosamente ');

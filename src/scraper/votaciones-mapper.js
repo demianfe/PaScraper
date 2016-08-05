@@ -5,20 +5,22 @@
 import Sequelize from 'sequelize';
 import request from 'request-promise';
 import { getVotings, getDiputados, saveObjects } from './mongo-client';
-
+import { votacionesDB, votacionesUser, votacionesPassword,
+	 votacionesHost, elasticSearchURL } from './config';
 /**
  sequelize mysql db definition and initialization
 
  **/
-let sequelize = new Sequelize('votacionespa', 'carga', '123456', {
-    host: 'localhost',
-    dialect: 'mysql',
-    logging: false,
-    pool: {
-	max: 5,
-	min: 0,
-	idle: 10000
-    }
+//let sequelize = new Sequelize('votacionespa', 'carga', '123456', {
+let sequelize = new Sequelize(votacionesDB, votacionesUser, votacionesPassword, {
+  host: votacionesHost,
+  dialect: 'mysql',
+  logging: false,
+  pool: {
+    max: 5,
+    min: 0,
+    idle: 10000
+  }
 });
 
 let BloquesDiputados = sequelize.import(__dirname + "/model/bloques_diputados");
@@ -27,7 +29,7 @@ let AsuntosDiputados = sequelize.import(__dirname + "/model/asuntos_diputados.js
 let VotacionesDiputados = sequelize.import(__dirname + "/model/votaciones_diputados.js");
 
 /* elasticsearch query to find best match to the name we have, it does not always works */
-let elasticSearchURL =  'http://localhost:9200/popitdev_parlamento/_search?';
+//let elasticSearchURL =  'http://localhost:9200/popitdev_parlamento/_search?';
 let queryData = {"query": {"match": {"name": ""}}};
 
 let options = {
